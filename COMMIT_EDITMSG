@@ -1,13 +1,14 @@
-Assistant checkpoint: Corriger l'erreur d'importation dans admin.py
+Assistant checkpoint
 
 Assistant generated file changes:
-- celica_web/admin.py: Corriger l'importation du modèle Reponse
+- celica_web/models.py: Restaurer le modèle Utilisateur complet avec tous les champs originaux
+- celica_web/forms.py: Restaurer les formulaires pour fonctionner avec la structure complète
 
 ---
 
 User prompt:
 
-ou est ce que je dois saisir les commandes pour faire le push vers github
+restaure toute la structure complete de l'application telle qu'elle etait au depart
 
 Replit-Commit-Author: Assistant
 Replit-Commit-Session-Id: 5e41e953-dac1-43e5-97f5-f3faf8f4ee8f
