@@ -1,0 +1,172 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Prévisualisation - {{ test.titre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- En-tête du test -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>
+                        Prévisualisation : {{ test.titre }}
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Module :</strong> {{ test.module.intitule }}</p>
+                            <p><strong>Durée :</strong> {{ test.duree }} minutes</p>
+                            <p><strong>Barème :</strong> {{ test.bareme }} points</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Nombre de questions :</strong> {{ questions.count }}</p>
+                            <p><strong>Instructeur :</strong> {{ test.instructeur.first_name }} {{ test.instructeur.last_name }}</p>
+                            <p><strong>Date de création :</strong> {{ test.date_creation|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% if test.description %}
+                        <div class="mt-3">
+                            <strong>Description :</strong>
+                            <p class="text-muted">{{ test.description }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'celica_web:test_form_edit' test.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Modifier le test
+                        </a>
+                        <a href="{% url 'celica_web:test_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-list"></i> Retour à la liste
+                        </a>
+                        <button class="btn btn-success" onclick="window.print()">
+                            <i class="fas fa-print"></i> Imprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Questions ({{ questions.count }})
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if questions %}
+                        {% for question in questions %}
+                            <div class="question-preview mb-4 p-3 border rounded">
+                                <!-- En-tête de la question -->
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="question-number">
+                                        Question {{ forloop.counter }}
+                                        <span class="badge bg-info ms-2">{{ question.get_type_question_display }}</span>
+                                        <span class="badge bg-secondary ms-1">{{ question.get_niveau_difficulte_display }}</span>
+                                    </h5>
+                                    <span class="badge bg-primary">{{ question.ponderation }} pt{{ question.ponderation|pluralize:"s" }}</span>
+                                </div>
+
+                                <!-- Énoncé -->
+                                <div class="question-enonce mb-3">
+                                    <p class="fw-bold">{{ question.enonce }}</p>
+                                    {% if question.image %}
+                                        <img src="{{ question.image.url }}" alt="Image question" class="img-fluid mt-2" style="max-width: 400px;">
+                                    {% endif %}
+                                </div>
+
+                                <!-- Réponses (pour QCM seulement) -->
+                                {% if question.type_question == 'QCM' %}
+                                    <div class="question-reponses">
+                                        <h6 class="text-muted mb-2">Réponses proposées :</h6>
+                                        <div class="row">
+                                            {% for reponse in question.reponses.all %}
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" 
+                                                               id="reponse_{{ reponse.id }}" disabled>
+                                                        <label class="form-check-label {% if reponse.est_correcte %}text-success fw-bold{% endif %}" 
+                                                               for="reponse_{{ reponse.id }}">
+                                                            {{ reponse.texte }}
+                                                            {% if reponse.est_correcte %}
+                                                                <i class="fas fa-check-circle text-success ms-1"></i>
+                                                            {% endif %}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <!-- Question à réponse libre -->
+                                    <div class="question-reponse-libre">
+                                        <h6 class="text-muted mb-2">Question à réponse libre</h6>
+                                        <textarea class="form-control" rows="3" placeholder="Zone de réponse libre..." disabled></textarea>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Explication -->
+                                {% if question.explication %}
+                                    <div class="question-explication mt-3">
+                                        <h6 class="text-muted">Explication :</h6>
+                                        <p class="text-info">{{ question.explication }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-question-circle fa-3x mb-3"></i>
+                            <h5>Aucune question</h5>
+                            <p>Ce test ne contient encore aucune question.</p>
+                            <a href="{% url 'celica_web:test_form_edit' test.id %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Ajouter des questions
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-preview {
+    background-color: #f8f9fa;
+}
+
+.question-preview:hover {
+    background-color: #e9ecef;
+    transition: background-color 0.3s ease;
+}
+
+.question-number {
+    color: #495057;
+}
+
+.question-enonce {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+@media print {
+    .card-header, .btn-group, .card:first-child {
+        display: none !important;
+    }
+    
+    .question-preview {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+    }
+}
+</style>
+{% endblock %}

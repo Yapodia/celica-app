@@ -1,0 +1,127 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Importer Questions{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-file-upload me-2"></i>Importer des questions depuis un fichier
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Instructions pour le format du fichier -->
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle me-2"></i>Format attendu</h6>
+                <ul class="mb-2">
+                    <li><strong>Colonnes</strong> : enonce, type_question (QCM ou QRL), niveau_difficulte (facile, moyen, difficile), module_id, reponse_1, est_correcte_1, reponse_2, est_correcte_2, ..., reponse_5, est_correcte_5</li>
+                    <li><strong>Exemple QCM</strong> : "Quelle est la capitale de la France?,QCM,facile,1,Paris,True,Londres,False,Berlin,False,,"</li>
+                    <li><strong>Exemple QRL</strong> : "Quel est le résultat de 2+2 ?,QRL,facile,1,4,True,,,,"</li>
+                    <li><strong>Images</strong> : Fournir un fichier ZIP avec des images nommées selon l'énoncé (ex. : "question_1.jpg").</li>
+                    <li><strong>Format du fichier</strong> : Spécifiez le format (CSV ou Excel) dans le champ correspondant.</li>
+                </ul>
+            </div>
+            <!-- Formulaire d'importation -->
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.fichier.id_for_label }}" class="form-label">{{ form.fichier.label }}</label>
+                        <input type="file" name="fichier" id="{{ form.fichier.id_for_label }}" class="form-control" accept=".csv,.xlsx" required>
+                        {% if form.fichier.errors %}
+                            <span class="text-danger">{{ form.fichier.errors }}</span>
+                        {% endif %}
+                        {% if form.fichier.help_text %}
+                            <small class="form-text text-muted">{{ form.fichier.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.images.id_for_label }}" class="form-label">{{ form.images.label }}</label>
+                        <input type="file" name="images" id="{{ form.images.id_for_label }}" class="form-control" accept=".zip">
+                        {% if form.images.errors %}
+                            <span class="text-danger">{{ form.images.errors }}</span>
+                        {% endif %}
+                        {% if form.images.help_text %}
+                            <small class="form-text text-muted">{{ form.images.help_text }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.format_fichier.id_for_label }}" class="form-label">{{ form.format_fichier.label }}</label>
+                        {{ form.format_fichier }}
+                        {% if form.format_fichier.errors %}
+                            <span class="text-danger">{{ form.format_fichier.errors }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3 d-flex align-items-end">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="save_to_db" id="save_to_db" checked>
+                            <label class="form-check-label" for="save_to_db">Sauvegarder les questions importées dans la base de données</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-upload me-2"></i>Importer
+                    </button>
+                    <a href="{% url 'celica_web:question_list' %}" class="btn btn-secondary btn-lg ms-2">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript pour gérer les contraintes -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('questionForm').addEventListener('submit', (e) => {
+            const fichierInput = document.querySelector('input[name="fichier"]');
+            const formatFichierSelect = document.querySelector('select[name="format_fichier"]');
+            const maxFileSize = 10 * 1024 * 1024; // 10 MB
+
+            // Validation de la correspondance fichier/format
+            if (fichierInput.files.length > 0 && !formatFichierSelect.value) {
+                e.preventDefault();
+                alert('Vous devez spécifier le format du fichier si un fichier est fourni.');
+                return;
+            }
+            if (formatFichierSelect.value && fichierInput.files.length === 0) {
+                e.preventDefault();
+                alert('Vous devez fournir un fichier si un format est spécifié.');
+                return;
+            }
+
+            // Validation de la taille du fichier
+            if (fichierInput.files.length > 0 && fichierInput.files[0].size > maxFileSize) {
+                e.preventDefault();
+                alert('Le fichier dépasse la taille maximale de 10 Mo.');
+                return;
+            }
+        });
+
+        // Validation Bootstrap
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })();
+    });
+</script>
+{% endblock %}

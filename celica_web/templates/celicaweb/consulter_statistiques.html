@@ -1,0 +1,202 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Statistiques des Tests - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <div class="card p-4 border rounded shadow-sm bg-light">
+            <!-- En-tête -->
+            <h4 class="card-title">
+                <i class="fas fa-chart-line me-2"></i>Statistiques des Tests
+            </h4>
+            <p class="card-text">
+                <span class="badge bg-info">Analyse des Performances</span>
+                <small class="text-muted ms-2">Résultats et statistiques des tests</small>
+            </p>
+
+            <!-- Statistiques -->
+            {% if statistiques %}
+                <div class="row">
+                    {% for statistique in statistiques %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-poll text-primary"></i> 
+                                    {{ statistique.test.titre }}
+                                </h5>
+                                <small class="text-muted">
+                                    Module : {{ statistique.test.module.intitule }}
+                                </small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <h3 class="text-success">{{ statistique.taux_reussite|floatformat:1 }}%</h3>
+                                            <small class="text-muted">Taux de Réussite</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h3 class="text-info">{{ statistique.nombre_participants }}</h3>
+                                        <small class="text-muted">Participants</small>
+                                    </div>
+                                </div>
+
+                                {% if statistique.score_moyen %}
+                                <hr class="my-3">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <h5 class="text-warning">{{ statistique.score_moyen|floatformat:2 }}</h5>
+                                            <small class="text-muted">Score Moyen</small>
+                                        </div>
+                                    </div>
+                                    {% if statistique.score_median %}
+                                    <div class="col-6">
+                                        <h5 class="text-secondary">{{ statistique.score_median|floatformat:2 }}</h5>
+                                        <small class="text-muted">Score Médian</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                <hr class="my-3">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar"></i> 
+                                            Période : {{ statistique.periode_debut|date:"d/m/Y" }} - {{ statistique.periode_fin|date:"d/m/Y" }}
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Barre de progression pour le taux de réussite -->
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted">Taux de Réussite</small>
+                                        <small class="text-muted">{{ statistique.taux_reussite|floatformat:1 }}%</small>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar 
+                                            {% if statistique.taux_reussite >= 80 %}bg-success
+                                            {% elif statistique.taux_reussite >= 60 %}bg-warning
+                                            {% else %}bg-danger{% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {{ statistique.taux_reussite }}%"
+                                            aria-valuenow="{{ statistique.taux_reussite }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <div class="row">
+                                    <div class="col">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user-tie"></i> 
+                                            Instructeur : {{ statistique.test.instructeur.get_full_name }}
+                                        </small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-download"></i> Exporter
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="{% url 'celica_web:statistiques_export' statistique.id 'csv' %}"><i class="fas fa-file-csv me-1"></i>CSV</a></li>
+                                                <li><a class="dropdown-item" href="{% url 'celica_web:statistiques_export' statistique.id 'excel' %}"><i class="fas fa-file-excel me-1"></i>Excel</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Résumé général -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie"></i> Résumé Général
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h4 class="text-primary">{{ statistiques.count }}</h4>
+                                <small class="text-muted">Tests Analysés</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-success">
+                                    {% widthratio statistiques|length 1 statistiques|length as total_participants %}
+                                    {{ total_participants|default:"0" }}
+                                </h4>
+                                <small class="text-muted">Total Participants</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-warning">
+                                    {{ moyenne_generale|floatformat:1 }}%
+                                </h4>
+                                <small class="text-muted">Moyenne Générale</small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-info">
+                                    <i class="fas fa-trophy" style="font-size: 2rem;"></i>
+                                </div>
+                                <small class="text-muted">Performance</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- État vide avec actions -->
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-chart-bar text-muted" style="font-size: 4rem;"></i>
+                        </div>
+                        <h4 class="text-muted mb-3">Aucune statistique disponible</h4>
+                        <p class="text-muted mb-4">
+                            Les statistiques seront générées automatiquement après que les apprenants passent des tests.<br>
+                            Pour voir des statistiques, assurez-vous que :
+                        </p>
+                        <div class="row justify-content-center">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled text-start">
+                                    <li class="mb-2">
+                                        <i class="fas fa-check-circle text-success"></i> 
+                                        Des tests ont été créés
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check-circle text-success"></i> 
+                                        Des apprenants ont passé ces tests
+                                    </li>
+                                    <li class="mb-2">
+                                        <i class="fas fa-check-circle text-success"></i> 
+                                        Des résultats ont été enregistrés
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{% url 'celica_web:test_list' %}" class="btn btn-primary me-2">
+                                <i class="fas fa-plus"></i> Gérer les Tests
+                            </a>
+                            <a href="{% url 'celica_web:admin_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

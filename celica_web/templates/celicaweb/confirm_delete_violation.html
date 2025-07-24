@@ -1,0 +1,57 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Confirmer la suppression - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmer la suppression
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">Êtes-vous sûr de vouloir supprimer cette violation de sécurité ?</h6>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Détails de la violation :</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Utilisateur :</strong> {{ violation.utilisateur.email }}</li>
+                            <li><strong>Type :</strong> {{ violation.get_violation_type_display|default:"Non spécifié" }}</li>
+                            <li><strong>Date :</strong> {{ violation.timestamp|date:"d/m/Y H:i:s" }}</li>
+                            <li><strong>Description :</strong> {{ violation.violation|truncatechars:100 }}</li>
+                            {% if violation.url %}
+                                <li><strong>URL :</strong> {{ violation.url|truncatechars:50 }}</li>
+                            {% endif %}
+                            {% if violation.ip_address %}
+                                <li><strong>IP :</strong> {{ violation.ip_address }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Cette action est irréversible. La violation sera définitivement supprimée de la base de données.
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'celica_web:journalisation_surveillance' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i>Supprimer définitivement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

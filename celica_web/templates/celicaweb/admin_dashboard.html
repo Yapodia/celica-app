@@ -1,0 +1,1121 @@
+{% extends 'celicaweb/base.html' %}
+{% load datetime_tags %}
+
+{% block title %}Tableau de bord Administrateur - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-11">
+            <div class="card p-4 border rounded shadow-sm bg-light">
+                <h4 class="card-title">
+                    <i class="fas fa-user-shield me-2"></i>
+                    Bienvenue, {{ user.first_name|default:user.email }}!
+                </h4>
+                <p class="card-text">
+                    <span class="badge bg-danger">{{ user.get_role_display|default:"Administrateur" }}</span>
+                    <small class="text-muted ms-2">
+                        Dernière connexion : {{ user.last_login|localtime_fr }}
+                        <span class="badge bg-info ms-2">{{ user.last_login|time_since_local }}</span>
+                    </small>
+                    <small class="text-muted d-block mt-1">
+                        <i class="fas fa-clock me-1"></i>Fuseau horaire : {{ timezone_name }} - Heure actuelle : {% current_time_fr %}
+                    </small>
+                </p>
+
+                <!-- Messages d'erreur/succès -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Vue d'ensemble des statistiques -->
+                <div class="mt-3">
+                    <h5 class="card-title">
+                        <i class="fas fa-chart-pie me-2"></i>Vue d'ensemble de la plateforme
+                    </h5>
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-primary text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-users me-2"></i>Utilisateurs
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_utilisateurs|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">
+                                        {% if stats.nouveaux_utilisateurs > 0 %}
+                                            +{{ stats.nouveaux_utilisateurs }} ce mois
+                                        {% else %}
+                                            total enregistrés
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-success text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-clipboard-list me-2"></i>Tests
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_tests|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">
+                                        {% if stats.nouveaux_tests > 0 %}
+                                            +{{ stats.nouveaux_tests }} ce mois
+                                        {% else %}
+                                            disponibles
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-info text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-book me-2"></i>Cours
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_cours|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">
+                                        {% if stats.nouveaux_cours > 0 %}
+                                            +{{ stats.nouveaux_cours }} ce mois
+                                        {% else %}
+                                            créés
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-warning text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-chart-line me-2"></i>Résultats
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_resultats|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">
+                                        {% if stats.moyenne_generale > 0 %}
+                                            Moy: {{ stats.moyenne_generale }}%
+                                        {% else %}
+                                            enregistrés
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- Statistiques complémentaires -->
+                <div class="mt-4">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-secondary text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-question-circle me-2"></i>Questions
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_questions|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">en banque</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-dark text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-layer-group me-2"></i>Modules
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_modules|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">configurés</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-purple text-white h-100" style="background-color: #6f42c1 !important;">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-users-cog me-2"></i>Groupes
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_groupes|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">actifs</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card text-center bg-orange text-white h-100" style="background-color: #fd7e14 !important;">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-bell me-2"></i>Notifications
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_notifications|default:0 }}</strong>
+                                    </p>
+                                    <small class="opacity-75">envoyées</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section d'activité récente -->
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clock me-2"></i>Activité récente
+                                </h5>
+                                <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#recentActivityDetails" aria-expanded="false" aria-controls="recentActivityDetails">
+                                    <i class="fas fa-eye me-1"></i>Voir détails
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="collapse" id="recentActivityDetails">
+                        <div class="row">
+                            <!-- Utilisateurs récents -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-user-plus me-2"></i>Nouveaux utilisateurs
+                                            <span class="badge bg-light text-dark ms-2">{{ utilisateurs_recents|length|default:0 }}</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if utilisateurs_recents and utilisateurs_recents|length > 0 %}
+                                            {% for utilisateur_recent in utilisateurs_recents %}
+                                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                                    <div>
+                                                        <strong>{{ utilisateur_recent.get_full_name|default:utilisateur_recent.email }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            {{ utilisateur_recent.get_role_display|default:"Utilisateur" }} - 
+                                                            {{ utilisateur_recent.date_joined|date:"d/m/Y" }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-{{ utilisateur_recent.role|default:'secondary' }}">
+                                                            {{ utilisateur_recent.get_role_display|default:"Utilisateur" }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Aucun nouvel utilisateur récent</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tests récents -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-clipboard-list me-2"></i>Tests récents
+                                            <span class="badge bg-light text-dark ms-2">{{ tests_recents|length|default:0 }}</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if tests_recents and tests_recents|length > 0 %}
+                                            {% for test in tests_recents %}
+                                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                                    <div>
+                                                        <strong>{{ test.titre|truncatechars:30|default:"Test sans titre" }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            Module: {{ test.module.intitule|default:"Non spécifié" }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <a href="{% url 'celica_web:test_edit' test.id %}" 
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Aucun test récent</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Événements et violations récents -->
+                        <div class="row mt-3">
+                            <!-- Événements de test récents -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-eye me-2"></i>Événements de test récents
+                                            <span class="badge bg-light text-dark ms-2">{{ events_recents|length|default:0 }}</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if events_recents and events_recents|length > 0 %}
+                                            {% for event in events_recents %}
+                                                <div class="d-flex justify-content-between align-items-center border-bottom py-2 logging-item">
+                                                    <div>
+                                                        <strong>{{ event.utilisateur.get_full_name|default:event.utilisateur.email }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-{{ event.get_severity_color }} logging-icon"></i>
+                                                            {{ event.get_event_type_display }} - {{ event.test.titre|truncatechars:25 }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-{{ event.get_severity_color }}">
+                                                            {{ event.get_event_type_display }}
+                                                        </span>
+                                                        <br>
+                                                        <small class="text-muted">{{ event.timestamp|date:"H:i" }}</small>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-eye fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Aucun événement récent</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Violations de sécurité récentes -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header bg-danger text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>Violations de sécurité récentes
+                                            <span class="badge bg-light text-dark ms-2">{{ violations_recents|length|default:0 }}</span>
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if violations_recents and violations_recents|length > 0 %}
+                                            {% for violation in violations_recents %}
+                                                <div class="d-flex justify-content-between align-items-center border-bottom py-2 logging-item violation-alert">
+                                                    <div>
+                                                        <strong>{{ violation.utilisateur.get_full_name|default:violation.utilisateur.email }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-exclamation-triangle logging-icon"></i>
+                                                            {{ violation.get_violation_type_display|default:violation.violation|truncatechars:30 }}
+                                                        </small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-danger">
+                                                            {{ violation.get_violation_type_display|default:"Violation" }}
+                                                        </span>
+                                                        <br>
+                                                        <small class="text-muted">{{ violation.timestamp|date:"H:i" }}</small>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-center py-3">
+                                                <i class="fas fa-shield-alt fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">Aucune violation récente</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section de gestion administrative -->
+                <div class="mt-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-cogs me-2"></i>Gestion de la plateforme
+                    </h5>
+                    
+                    <!-- Gestion des utilisateurs -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-users me-2"></i>Gestion des utilisateurs
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_utilisateurs|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p class="text-success mb-2">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            {{ stats.total_utilisateurs }} utilisateur{{ stats.total_utilisateurs|pluralize }} enregistré{{ stats.total_utilisateurs|pluralize }}
+                                        </p>
+                                        <small class="text-muted">
+                                            {{ stats.apprenants_count }} apprenants, {{ stats.instructeurs_count }} instructeurs, {{ stats.admins_count }} administrateurs
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <a href="{% url 'celica_web:gerer_utilisateurs' %}" class="btn btn-outline-primary btn-sm me-2">
+                                            <i class="fas fa-list me-1"></i>Gérer
+                                        </a>
+                                        <button class="btn btn-success btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#addUserForm" aria-expanded="false" aria-controls="addUserForm">
+                                            <i class="fas fa-plus me-1"></i>Ajouter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gestion du contenu -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-book me-2"></i>Gestion du contenu pédagogique
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <div class="d-grid">
+                                            <a href="{% url 'celica_web:cours_list' %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-book me-1"></i>Cours ({{ stats.total_cours }})
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <div class="d-grid">
+                                            <a href="{% url 'celica_web:test_list' %}" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-clipboard-list me-1"></i>Tests ({{ stats.total_tests }})
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <div class="d-grid">
+                                            <a href="{% url 'celica_web:question_list' %}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-question-circle me-1"></i>Questions ({{ stats.total_questions }})
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <div class="d-grid">
+                                            <a href="{% url 'celica_web:module_list' %}" class="btn btn-outline-dark btn-sm">
+                                                <i class="fas fa-layer-group me-1"></i>Modules ({{ stats.total_modules }})
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gestion organisationnelle -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-sitemap me-2"></i>Gestion organisationnelle
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <div class="d-grid">
+                                            <a href="{% url 'celica_web:groupe_list' %}" class="btn btn-outline-warning btn-sm">
+                                                <i class="fas fa-users-cog me-1"></i>Groupes ({{ stats.total_groupes }})
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="d-grid">
+                                            <a href="{% url 'celica_web:planning_list' %}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-calendar-alt me-1"></i>Plannings ({{ stats.total_plannings }})
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="d-grid">
+                                            <a href="{% url 'celica_web:notification_list' %}" class="btn btn-outline-info btn-sm">
+                                                <i class="fas fa-bell me-1"></i>Notifications ({{ stats.total_notifications }})
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suivi des résultats -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>Suivi des résultats
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_resultats|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p class="text-success mb-2">
+                                            <i class="fas fa-graduation-cap me-2"></i>
+                                            {{ stats.total_resultats }} résultat{{ stats.total_resultats|pluralize }} d'apprenants
+                                            {% if stats.moyenne_generale > 0 %}
+                                                <small class="text-muted">(Moyenne générale: {{ stats.moyenne_generale }}%)</small>
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">Consultez tous les résultats des tests passés par les apprenants</small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <a href="{% url 'celica_web:resultats_apprenants' %}" class="btn btn-outline-success btn-sm me-2">
+                                            <i class="fas fa-eye me-1"></i>Voir tous
+                                        </a>
+                                        <a href="{% url 'celica_web:resultats_apprenants' %}?export=excel" class="btn btn-success btn-sm">
+                                            <i class="fas fa-download me-1"></i>Export
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Journalisation et surveillance -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-shield-alt me-2"></i>Journalisation et surveillance
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p class="text-success mb-2">
+                                            <i class="fas fa-eye me-2"></i>
+                                            Surveillance des tests et violations de sécurité
+                                        </p>
+                                        <small class="text-muted">Suivi en temps réel des événements et violations détectées</small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <a href="{% url 'celica_web:journalisation_surveillance' %}" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-shield-alt me-1"></i>Consulter
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Statistiques et rapports -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-dark text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-chart-bar me-2"></i>Statistiques et rapports
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p class="text-success mb-2">
+                                            <i class="fas fa-chart-line me-2"></i>
+                                            Analyses avancées et rapports détaillés
+                                        </p>
+                                        <small class="text-muted">Consultez les performances générales de la plateforme</small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <a href="{% url 'celica_web:consulter_statistiques' %}" class="btn btn-outline-dark btn-sm">
+                                            <i class="fas fa-chart-bar me-1"></i>Consulter
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaires collapsibles -->
+                <!-- Formulaire d'ajout d'utilisateur -->
+                <div class="collapse mt-4" id="addUserForm">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user-plus me-2"></i>Ajouter un nouvel utilisateur
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" class="row g-3">
+                                {% csrf_token %}
+                                <!-- Ordre demandé : Nom, Prénom, Matricule, Email, Mot de passe, puis autres -->
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.last_name.label_tag }}
+                                    {{ utilisateur_form.last_name }}
+                                    {% if utilisateur_form.last_name.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.last_name.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.last_name.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.last_name.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.first_name.label_tag }}
+                                    {{ utilisateur_form.first_name }}
+                                    {% if utilisateur_form.first_name.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.first_name.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.first_name.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.first_name.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.matricule.label_tag }}
+                                    {{ utilisateur_form.matricule }}
+                                    {% if utilisateur_form.matricule.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.matricule.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.matricule.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.matricule.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.email.label_tag }}
+                                    {{ utilisateur_form.email }}
+                                    {% if utilisateur_form.email.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.email.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.email.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.email.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.password.label_tag }}
+                                    {{ utilisateur_form.password }}
+                                    {% if utilisateur_form.password.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.password.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.password.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.password.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.confirm_password.label_tag }}
+                                    {{ utilisateur_form.confirm_password }}
+                                    {% if utilisateur_form.confirm_password.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.confirm_password.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.confirm_password.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.confirm_password.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.role.label_tag }}
+                                    {{ utilisateur_form.role }}
+                                    {% if utilisateur_form.role.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.role.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.role.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.role.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.statut.label_tag }}
+                                    {{ utilisateur_form.statut }}
+                                    {% if utilisateur_form.statut.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.statut.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.statut.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.statut.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.specialite.label_tag }}
+                                    {{ utilisateur_form.specialite }}
+                                    {% if utilisateur_form.specialite.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.specialite.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.specialite.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.specialite.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.niveau.label_tag }}
+                                    {{ utilisateur_form.niveau }}
+                                    {% if utilisateur_form.niveau.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.niveau.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.niveau.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.niveau.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.date_naissance.label_tag }}
+                                    {{ utilisateur_form.date_naissance }}
+                                    {% if utilisateur_form.date_naissance.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.date_naissance.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.date_naissance.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.date_naissance.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ utilisateur_form.date_preinscription.label_tag }}
+                                    {{ utilisateur_form.date_preinscription }}
+                                    {% if utilisateur_form.date_preinscription.help_text %}
+                                        <small class="form-text text-muted">{{ utilisateur_form.date_preinscription.help_text }}</small>
+                                    {% endif %}
+                                    {% if utilisateur_form.date_preinscription.errors %}
+                                        <div class="invalid-feedback d-block">{{ utilisateur_form.date_preinscription.errors.as_text }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-12 text-center">
+                                    <button type="submit" name="action" value="ajouter_utilisateur" class="btn btn-success">
+                                        <i class="fas fa-user-plus me-2"></i>Ajouter l'utilisateur
+                                    </button>
+                                    <button type="button" class="btn btn-secondary ms-2" data-bs-toggle="collapse" data-bs-target="#addUserForm" aria-expanded="true" aria-controls="addUserForm">
+                                        <i class="fas fa-times me-2"></i>Annuler
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions rapides -->
+                <div class="mt-4">
+                    <h6 class="card-title">
+                        <i class="fas fa-bolt me-2"></i>Actions rapides
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-info btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#sendNotificationForm" aria-expanded="false" aria-controls="sendNotificationForm">
+                            <i class="fas fa-bell me-1"></i>Envoyer notification
+                        </button>
+
+                        <a href="{% url 'admin:index' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-cogs me-1"></i>Interface Django Admin
+                        </a>
+                        
+                        <!-- Liens de journalisation -->
+                        <a href="{% url 'celica_web:consulter_statistiques' %}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-chart-line me-1"></i>Rapports détaillés
+                        </a>
+                        
+                        <a href="{% url 'celica_web:test_list' %}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-clipboard-list me-1"></i>Surveiller tests
+                        </a>
+                        
+                        <a href="{% url 'celica_web:logout' %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-sign-out-alt me-1"></i>Se déconnecter
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Formulaire d'envoi de notification -->
+                <div class="collapse mt-4" id="sendNotificationForm">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bell me-2"></i>Envoyer une notification
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" class="row g-3">
+                                {% csrf_token %}
+                                <div class="col-md-6">
+                                    {{ notification_form.utilisateur.label_tag }}
+                                    {{ notification_form.utilisateur }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ notification_form.titre.label_tag }}
+                                    {{ notification_form.titre }}
+                                </div>
+                                <div class="col-12">
+                                    {{ notification_form.contenu.label_tag }}
+                                    {{ notification_form.contenu }}
+                                </div>
+                                <div class="col-12 text-center">
+                                    <button type="submit" name="action" value="envoyer_notification" class="btn btn-info">
+                                        <i class="fas fa-paper-plane me-2"></i>Envoyer la notification
+                                    </button>
+                                    <button type="button" class="btn btn-secondary ms-2" data-bs-toggle="collapse" data-bs-target="#sendNotificationForm" aria-expanded="true" aria-controls="sendNotificationForm">
+                                        <i class="fas fa-times me-2"></i>Annuler
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Ajout de styles pour les couleurs personnalisées */
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+
+/* Amélioration des badges par rôle */
+.badge.bg-apprenant {
+    background-color: #0d6efd !important;
+}
+
+.badge.bg-instructeur {
+    background-color: #198754 !important;
+}
+
+.badge.bg-admin {
+    background-color: #dc3545 !important;
+}
+
+/* Animation hover pour les cartes */
+.card:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Style pour les boutons d'action */
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Animation smooth pour le scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Effet de highlight temporaire pour le formulaire */
+.highlight-form {
+    background-color: #e7f3ff;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+/* Styles spécifiques pour la section de journalisation */
+.logging-stats {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.logging-stats h5 {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.logging-stats small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+/* Animation pour les compteurs */
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.counting-animation {
+    animation: countUp 0.5s ease-out;
+}
+
+/* Styles pour les badges d'événements */
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-info {
+    background-color: #0dcaf0 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Effet de pulsation pour les violations */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+.violation-alert {
+    animation: pulse 2s infinite;
+}
+
+/* Styles pour les cartes de journalisation */
+.card-header.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+}
+
+.card-header.bg-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%) !important;
+}
+
+/* Responsive design pour les statistiques */
+@media (max-width: 768px) {
+    .logging-stats {
+        padding: 10px;
+    }
+    
+    .logging-stats h5 {
+        font-size: 1.1rem;
+    }
+    
+    .logging-stats small {
+        font-size: 0.7rem;
+    }
+}
+
+/* Effet de survol pour les éléments de journalisation */
+.logging-item:hover {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+/* Styles pour les icônes de journalisation */
+.logging-icon {
+    font-size: 1.2em;
+    margin-right: 8px;
+}
+
+/* Animation pour les nouvelles violations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.new-violation {
+    animation: slideIn 0.3s ease-out;
+}
+
+
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion du défilement automatique pour le formulaire d'ajout d'utilisateur
+    const addUserBtn = document.querySelector('[data-bs-target="#addUserForm"]');
+    const addUserForm = document.getElementById('addUserForm');
+    
+    if (addUserBtn && addUserForm) {
+        // Écouter l'événement d'ouverture du collapse
+        addUserForm.addEventListener('shown.bs.collapse', function() {
+            // Défiler vers le formulaire avec un petit décalage
+            const offset = 100; // Décalage du haut en pixels
+            const elementPosition = addUserForm.offsetTop - offset;
+            
+            // Défilement smooth
+            window.scrollTo({
+                top: elementPosition,
+                behavior: 'smooth'
+            });
+            
+            // Ajouter un effet de highlight temporaire
+            addUserForm.classList.add('highlight-form');
+            
+            // Retirer l'effet après 2 secondes
+            setTimeout(() => {
+                addUserForm.classList.remove('highlight-form');
+            }, 2000);
+            
+            // Focus sur le premier champ (nom)
+            const firstInput = addUserForm.querySelector('input[name="last_name"]');
+            if (firstInput) {
+                setTimeout(() => {
+                    firstInput.focus();
+                }, 500);
+            }
+        });
+    }
+    
+    // Gestion similaire pour le formulaire de notification
+    const notificationBtn = document.querySelector('[data-bs-target="#sendNotificationForm"]');
+    const notificationForm = document.getElementById('sendNotificationForm');
+    
+    if (notificationBtn && notificationForm) {
+        notificationForm.addEventListener('shown.bs.collapse', function() {
+            const offset = 100;
+            const elementPosition = notificationForm.offsetTop - offset;
+            
+            window.scrollTo({
+                top: elementPosition,
+                behavior: 'smooth'
+            });
+            
+            notificationForm.classList.add('highlight-form');
+            setTimeout(() => {
+                notificationForm.classList.remove('highlight-form');
+            }, 2000);
+            
+            // Focus sur le premier champ
+            const firstSelect = notificationForm.querySelector('select[name="utilisateur"]');
+            if (firstSelect) {
+                setTimeout(() => {
+                    firstSelect.focus();
+                }, 500);
+            }
+        });
+    }
+    
+
+    
+    // Gestion de la section d'activité récente
+    const recentActivityBtn = document.querySelector('[data-bs-target="#recentActivityDetails"]');
+    const recentActivityDetails = document.getElementById('recentActivityDetails');
+    
+    if (recentActivityBtn && recentActivityDetails) {
+        recentActivityDetails.addEventListener('shown.bs.collapse', function() {
+            const offset = 100;
+            const elementPosition = recentActivityDetails.offsetTop - offset;
+            
+            window.scrollTo({
+                top: elementPosition,
+                behavior: 'smooth'
+            });
+            
+            recentActivityDetails.classList.add('highlight-form');
+            setTimeout(() => {
+                recentActivityDetails.classList.remove('highlight-form');
+            }, 2000);
+        });
+    }
+    
+    // Animation des statistiques de journalisation
+    function animateCounters() {
+        const counters = document.querySelectorAll('.text-danger, .text-warning');
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent) || 0;
+            let current = 0;
+            const increment = target / 20;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                counter.textContent = Math.floor(current);
+            }, 50);
+        });
+    }
+    
+    // Déclencher l'animation quand la section de journalisation est visible
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounters();
+                observer.unobserve(entry.target);
+            }
+        });
+    });
+    
+    const loggingSection = document.querySelector('[data-bs-target="#loggingDetails"]');
+    if (loggingSection) {
+        observer.observe(loggingSection);
+    }
+    
+    // Gestion des boutons d'annulation - scroll vers le haut de la section
+    const cancelBtns = document.querySelectorAll('[data-bs-target="#addUserForm"], [data-bs-target="#sendNotificationForm"]');
+    cancelBtns.forEach(btn => {
+        if (btn.textContent.includes('Annuler')) {
+            btn.addEventListener('click', function() {
+                // Attendre que le collapse se ferme
+                setTimeout(() => {
+                    const gestionSection = document.querySelector('h5:contains("Gestion de la plateforme")') || 
+                                         document.querySelector('.card-title');
+                    if (gestionSection) {
+                        window.scrollTo({
+                            top: gestionSection.offsetTop - 100,
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 300);
+            });
+        }
+    });
+    
+    // Mise à jour automatique des statistiques de journalisation (toutes les 30 secondes)
+    setInterval(() => {
+        // Ici on pourrait ajouter une requête AJAX pour mettre à jour les statistiques
+        // Pour l'instant, on se contente de rafraîchir la page
+        console.log('Mise à jour des statistiques de journalisation...');
+    }, 30000);
+});
+</script>
+{% endblock %}

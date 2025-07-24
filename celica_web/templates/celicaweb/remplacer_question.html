@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>Remplacer la question dans le test "{{ test.titre }}"</h2>
+  <p>Question actuelle : {{ question.enonce }}</p>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <h3>Réponses</h3>
+    {{ reponse_formset.management_form }}
+    {% for form in reponse_formset %}
+      <div class="reponse-form">
+        {{ form.as_p }}
+      </div>
+    {% endfor %}
+    <button type="submit">Remplacer la question</button>
+    <a href="{% url 'celica_web:question_list' %}">Annuler</a>
+  </form>
+
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

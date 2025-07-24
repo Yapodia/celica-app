@@ -1,0 +1,369 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Résultats des Apprenants - CelicaWeb{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .stats-cards {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #007bff;
+        min-width: 200px;
+        flex: 1 1 200px;
+    }
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 0.5rem;
+    }
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .filter-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .filter-card h5 {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    .filter-card h5 i {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+    .btn-filter {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+    .btn-filter:hover {
+        background-color: #0056b3;
+        color: white;
+    }
+    .btn-reset {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        margin-left: 0.5rem;
+        transition: background-color 0.3s ease;
+    }
+    .btn-reset:hover {
+        background-color: #495057;
+        color: white;
+    }
+    .resultats-table {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    .table th {
+        background: #495057;
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+    .badge-appreciation {
+        font-size: 0.85em;
+        padding: 0.4rem 0.8rem;
+    }
+    .export-buttons {
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header/statistiques -->
+    <div class="results-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2"><i class="fas fa-chart-line me-2"></i>Résultats des Apprenants</h1>
+                <p class="mb-0">Suivi des performances des apprenants sur vos tests</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if user.role == 'admin' %}
+                    <span class="badge bg-danger">Vue Administrateur</span>
+                {% else %}
+                    <span class="badge bg-primary">Mes Tests</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <!-- Statistiques générales -->
+    <div class="stats-cards">
+        <div class="stat-card">
+            <div class="stat-number">{{ resultats.count }}</div>
+            <div class="stat-label">Total Résultats</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ tests.count }}</div>
+            <div class="stat-label">Tests {% if user.role == 'admin' %}Total{% else %}Créés{% endif %}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ apprenants.count }}</div>
+            <div class="stat-label">Apprenants</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ modules.count }}</div>
+            <div class="stat-label">Modules</div>
+        </div>
+    </div>
+    <!-- Filtres -->
+    <div class="filter-card">
+        <h5><i class="fas fa-filter"></i>Filtres</h5>
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="test" class="form-label">Test</label>
+                <select name="test" id="test" class="form-select">
+                    <option value="">Tous les tests</option>
+                    {% for test in tests %}
+                        <option value="{{ test.id }}" {% if selected_test == test.id|stringformat:"s" %}selected{% endif %}>{{ test.titre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="module" class="form-label">Module</label>
+                <select name="module" id="module" class="form-select">
+                    <option value="">Tous les modules</option>
+                    {% for module in modules %}
+                        <option value="{{ module.id }}" {% if selected_module == module.id|stringformat:"s" %}selected{% endif %}>{{ module.intitule }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="apprenant" class="form-label">Apprenant</label>
+                <select name="apprenant" id="apprenant" class="form-select">
+                    <option value="">Tous les apprenants</option>
+                    {% for apprenant in apprenants %}
+                        <option value="{{ apprenant.id }}" {% if selected_apprenant == apprenant.id|stringformat:"s" %}selected{% endif %}>{{ apprenant.first_name }} {{ apprenant.last_name }} ({{ apprenant.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="date_debut" class="form-label">Date début</label>
+                <input type="date" name="date_debut" id="date_debut" class="form-control" value="{{ date_debut }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_fin" class="form-label">Date fin</label>
+                <input type="date" name="date_fin" id="date_fin" class="form-control" value="{{ date_fin }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-filter w-100 me-2"><i class="fas fa-search me-1"></i>Filtrer</button>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <a href="{% url 'celica_web:resultats_apprenants' %}" class="btn btn-reset w-100"><i class="fas fa-times me-1"></i>Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+    <!-- Export -->
+    {% if resultats %}
+    <div class="export-buttons">
+        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success">
+            <i class="fas fa-file-csv me-1"></i>Exporter CSV
+        </a>
+        <a href="?{{ request.GET.urlencode }}&export=excel" class="btn btn-primary">
+            <i class="fas fa-file-excel me-1"></i>Exporter Excel
+        </a>
+    </div>
+    {% endif %}
+    <!-- Tableau des résultats -->
+    <div class="resultats-table">
+        {% if resultats %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Apprenant</th>
+                            <th>Test</th>
+                            <th>Module</th>
+                            <th>Score</th>
+                            <th>Note</th>
+                            <th>Appréciation</th>
+                            <th>Date</th>
+                            <th>Temps passé</th>
+                            {% if user.role == 'admin' %}
+                            <th>Créé par</th>
+                            {% endif %}
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for resultat in resultats %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-graduate me-2 text-primary"></i>
+                                    <div>
+                                        <strong>{{ resultat.apprenant.first_name }} {{ resultat.apprenant.last_name }}</strong>
+                                        <br><small class="text-muted">{{ resultat.apprenant.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ resultat.test.titre }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ resultat.test.module.intitule }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ resultat.score|floatformat:1 }}</strong> / {{ resultat.test.bareme|floatformat:1 }}
+                            </td>
+                            <td>
+                                <strong class="text-primary">{{ resultat.note_sur_20|floatformat:1 }}/20</strong>
+                            </td>
+                            <td>
+                                {% if resultat.appreciation == 'excellent' %}
+                                    <span class="badge badge-appreciation bg-success">Excellent</span>
+                                {% elif resultat.appreciation == 'tres_bien' %}
+                                    <span class="badge badge-appreciation bg-success">Très bien</span>
+                                {% elif resultat.appreciation == 'bien' %}
+                                    <span class="badge badge-appreciation bg-info">Bien</span>
+                                {% elif resultat.appreciation == 'assez_bien' %}
+                                    <span class="badge badge-appreciation bg-warning">Assez bien</span>
+                                {% elif resultat.appreciation == 'passable' %}
+                                    <span class="badge badge-appreciation bg-warning">Passable</span>
+                                {% else %}
+                                    <span class="badge badge-appreciation bg-danger">Insuffisant</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <i class="fas fa-calendar me-1"></i>{{ resultat.date_passation|date:"d/m/Y H:i" }}
+                            </td>
+                            <td>
+                                <i class="fas fa-clock me-1"></i>{{ resultat.temps_passe|default:resultat.test.duree }} min
+                            </td>
+                            {% if user.role == 'admin' %}
+                            <td>
+                                <span class="badge bg-secondary">{{ resultat.test.instructeur.first_name }} {{ resultat.test.instructeur.last_name }}</span>
+                            </td>
+                            {% endif %}
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'celica_web:resultat_detail_instructeur' resultat.id %}"
+                                       class="btn btn-outline-primary"
+                                       title="Voir le détail de ce résultat">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'celica_web:resultat_export' resultat.id 'pdf' %}"
+                                       class="btn btn-outline-success"
+                                       title="Exporter ce résultat">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center p-5">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Aucun résultat trouvé</h4>
+                <p class="text-muted">
+                    {% if user.role == 'admin' %}
+                        Aucun résultat n'a encore été enregistré dans le système.
+                    {% else %}
+                        Aucun apprenant n'a encore passé vos tests.
+                    {% endif %}
+                </p>
+                {% if user.role != 'admin' %}
+                <a href="{% url 'celica_web:test_list' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Créer un Test
+                </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    <!-- Pagination -->
+    {% if resultats.has_other_pages %}
+    <nav aria-label="Pagination des résultats" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if resultats.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if selected_test %}&test={{ selected_test }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_apprenant %}&apprenant={{ selected_apprenant }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ resultats.previous_page_number }}{% if selected_test %}&test={{ selected_test }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_apprenant %}&apprenant={{ selected_apprenant }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for num in resultats.paginator.page_range %}
+                {% if resultats.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > resultats.number|add:'-3' and num < resultats.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if selected_test %}&test={{ selected_test }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_apprenant %}&apprenant={{ selected_apprenant }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if resultats.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ resultats.next_page_number }}{% if selected_test %}&test={{ selected_test }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_apprenant %}&apprenant={{ selected_apprenant }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ resultats.paginator.num_pages }}{% if selected_test %}&test={{ selected_test }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_apprenant %}&apprenant={{ selected_apprenant }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit form when filters change
+    $(document).ready(function() {
+        $('#test, #module, #apprenant').change(function() {
+            // Optionally auto-submit, or let users click the button
+            // $(this).closest('form').submit();
+        });
+    });
+</script>{% endblock %}

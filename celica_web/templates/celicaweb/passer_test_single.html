@@ -1,0 +1,932 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}{{ test.titre }} - Question {{ question_actuelle_numero }}/{{ total_questions }} - CelicaWeb{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+.violation-alert {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #dc3545;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    z-index: 10000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Désactiver la sélection de texte */
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+}
+
+/* Permettre la sélection dans les champs de saisie */
+input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+body {
+    background: #f8f9fa;
+    min-height: 100vh;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.test-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Header avec score et timer */
+.test-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.score-display {
+    color: #333;
+}
+
+.timer-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #28a745;
+}
+
+.timer-display.warning {
+    color: #ffc107;
+}
+
+.timer-display.danger {
+    color: #dc3545;
+}
+
+/* Question principale */
+.question-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 100%;
+}
+
+.question-text {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    text-align: left;
+    padding: 0;
+}
+
+/* Options de réponse */
+.answers-list {
+    margin-bottom: 3rem;
+}
+
+.answer-item {
+    background: #e9ecef;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1rem;
+    color: #333;
+}
+
+.answer-item:hover {
+    background: #dee2e6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.answer-item.selected {
+    background: #d1ecf1;
+    border-color: #28a745;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    animation: selectionPulse 0.3s ease-out;
+}
+
+@keyframes selectionPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.answer-letter {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: #6c757d;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.answer-item.selected .answer-letter {
+    background: #28a745;
+}
+
+.answer-text {
+    flex: 1;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* Zone de texte libre */
+.text-input-area {
+    margin-bottom: 3rem;
+}
+
+.text-answer {
+    width: 100%;
+    min-height: 200px;
+    padding: 1.5rem;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+    background: white;
+    color: #333;
+    line-height: 1.6;
+}
+
+.text-answer:focus {
+    outline: none;
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.character-counter {
+    text-align: right;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+/* Navigation */
+.main-navigation {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.nav-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-btn:hover {
+    background: #5a6268;
+}
+
+.nav-btn:disabled {
+    background: #dee2e6;
+    cursor: not-allowed;
+}
+
+.next-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.next-button:hover {
+    background: #218838;
+}
+
+/* Indicateur de sauvegarde */
+.save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.save-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.save-indicator.saving {
+    background: #ffc107;
+    color: #212529;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .test-container {
+        padding: 1rem;
+    }
+    
+    .question-text {
+        font-size: 1.2rem;
+    }
+    
+    .answer-item {
+        padding: 1rem;
+    }
+    
+    .main-navigation {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Alerte de violation de sécurité -->
+<div id="violation-alert" class="violation-alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span id="violation-message">Violation de sécurité détectée</span>
+</div>
+
+<div class="test-container">
+    <!-- Header avec question et timer -->
+    <div class="test-header">
+        <div class="question-x">Question {{ question_actuelle_numero }}</div>
+        <div class="timer-display" id="timerDisplay">
+            <i class="fas fa-clock"></i>
+            <span id="timerTime"></span>
+        </div>
+    </div>
+
+    <!-- Section de la question -->
+    <div class="question-section">
+        <!-- Énoncé de la question -->
+        <div class="question-text">
+            {% if question.enonce %}
+                {{ question.enonce|linebreaks }}
+            {% else %}
+                Question {{ question_actuelle_numero }} - {{ question.id }}
+            {% endif %}
+        </div>
+
+        <!-- Image de la question -->
+        {% if question.image %}
+            <div class="question-image-container" style="text-align: center; margin: 2rem 0;">
+                <img src="{{ question.image.url }}" 
+                     alt="Image de la question {{ question_actuelle_numero }}" 
+                     class="question-image" 
+                     style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            </div>
+        {% endif %}
+
+        <!-- Formulaire -->
+        <form method="post" id="questionForm" action="">
+            {% csrf_token %}
+            <input type="hidden" name="question_id" value="{{ question.id }}">
+            <input type="hidden" name="action" value="save_and_next">
+            
+            {% if question.type_question == 'QCM' %}
+                <!-- Réponses QCM -->
+                <div class="answers-list">
+                    {% for reponse in reponses_ordonnees %}
+                    <div class="answer-item">
+                        <input type="radio" 
+                               name="reponse_qcm" 
+                               value="{{ reponse.id }}"
+                               id="reponse_{{ reponse.id }}"
+                               {% if reponse.id in reponses_utilisateur %}checked{% endif %}>
+                        <label for="reponse_{{ reponse.id }}" class="answer-text">
+                            {{ reponse.texte }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Réponse libre -->
+            {% if question.type_question == 'QRL' %}
+            <div class="text-input-area">
+                <textarea name="reponse_libre" 
+                          class="text-answer" 
+                          placeholder="Tapez votre réponse ici..."
+                          maxlength="2000" 
+                          id="textAnswer">{{ reponse_libre|default:"" }}</textarea>
+                <div class="character-counter">
+                    <span id="charCount">{{ reponse_libre|length|default:0 }}</span>/2000 caractères
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Bouton Terminer uniquement -->
+            <div class="main-navigation">
+                {% if not question_suivante %}
+                    <button type="submit" name="action" value="finish_test" class="next-button">
+                        <i class="fas fa-check-circle"></i>
+                        Terminer le test
+                    </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Navigation secondaire -->
+    <div class="secondary-nav" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div style="flex: 1; display: flex;">
+            <button class="nav-btn" disabled style="opacity:0.5;cursor:not-allowed;">
+                <i class="fas fa-chevron-left"></i>
+                Précédent
+            </button>
+        </div>
+        <div style="flex: 1; display: flex; justify-content: center;">
+            <span class="question-counter" style="font-weight: 600;">{{ question_actuelle_numero }} / {{ total_questions }}</span>
+        </div>
+        <div style="flex: 1; display: flex; justify-content: flex-end;">
+            {% if question_suivante %}
+            <form method="post" id="navNextForm" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="question_id" value="{{ question.id }}">
+                <input type="hidden" name="action" value="save_and_next">
+                <button type="submit" class="nav-btn">
+                    Suivant
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Indicateur de sauvegarde -->
+<div class="save-indicator" id="saveIndicator">
+    <span id="saveText">Sauvegardé ✓</span>
+</div>
+
+<script>
+// GESTION CSRF ET SÉCURITÉ
+console.log('🚀 SYSTÈME DE SÉCURITÉ INITIALISÉ');
+
+// Fonction pour obtenir le token CSRF
+function getCSRFToken() {
+    // Essayer d'abord le meta tag
+    const metaToken = document.querySelector('meta[name=csrf-token]');
+    if (metaToken && metaToken.getAttribute('content')) {
+        return metaToken.getAttribute('content');
+    }
+    
+    // Sinon, essayer le champ caché dans le formulaire
+    const token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token && token.value) {
+        return token.value;
+    }
+    
+    // En dernier recours, essayer de récupérer depuis les cookies
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'csrftoken') {
+            return value;
+        }
+    }
+    
+    console.warn('⚠️ TOKEN CSRF NON TROUVÉ');
+    return '';
+}
+
+// Variables de surveillance
+const testSessionKey = 'violationCount_' + {{ test.id }} + '_' + {{ request.user.id }};
+const maxViolations = 3;
+
+// RÉCUPÉRER LE COMPTEUR DEPUIS LE SERVEUR
+console.log('🔍 RÉCUPÉRATION DU COMPTEUR DEPUIS LE SERVEUR');
+let violationCount = 0;
+
+// Fonction pour récupérer le compteur depuis le serveur
+function getViolationCount() {
+    console.log('🔄 Récupération du compteur depuis le serveur...');
+    fetch('/test/security-violation/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        console.log('📡 Réponse reçue:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('📊 Données reçues:', data);
+        if (data.violation_count !== undefined) {
+            violationCount = data.violation_count;
+            console.log(`📊 COMPTEUR RÉCUPÉRÉ DEPUIS LE SERVEUR: ${violationCount}/${maxViolations}`);
+            
+            // Vérifier si le test doit être terminé
+            if (violationCount >= maxViolations) {
+                console.log('🚨 VIOLATIONS DÉJÀ DÉPASSÉES - TERMINATION DU TEST');
+                alert('Test terminé automatiquement en raison de violations répétées.');
+                window.location.href = '{% url "celica_web:test_terminated" %}';
+            }
+        } else {
+            console.log('⚠️ Pas de compteur dans la réponse');
+        }
+    })
+    .catch(error => {
+        console.warn('❌ Erreur lors de la récupération du compteur:', error);
+        // Fallback vers localStorage
+        violationCount = parseInt(localStorage.getItem(testSessionKey) || '0');
+        console.log(`📊 COMPTEUR FALLBACK: ${violationCount}/${maxViolations}`);
+    });
+}
+
+// Récupérer le compteur au chargement
+getViolationCount();
+
+// Variables pour éviter les fausses violations lors des transitions de page
+let isPageTransitioning = false;
+let isFormSubmitting = false;
+
+console.log(`📊 COMPTEUR ACTUEL: ${violationCount}/${maxViolations}`);
+console.log(`🔑 CLÉ DE SESSION: ${testSessionKey}`);
+console.log(`🎯 LIMITE DE VIOLATIONS: ${maxViolations}`);
+
+
+
+// Système anti-spam pour éviter les violations multiples
+let lastViolationTime = 0;
+const violationCooldown = 2000; // 2 secondes entre les violations
+
+// Fonction de gestion des violations
+function handleSecurityViolation(violationType, details = {}) {
+    const now = Date.now();
+    
+    // Éviter les violations trop rapprochées
+    if (now - lastViolationTime < violationCooldown) {
+        console.log(`⏰ VIOLATION IGNORÉE (trop rapide): ${violationType}`);
+        return;
+    }
+    
+    lastViolationTime = now;
+    console.log(`🚨 VIOLATION DÉTECTÉE: ${violationType}`);
+    console.log(`📊 COMPTEUR ACTUEL: ${violationCount}/${maxViolations}`);
+    
+    // Afficher l'alerte immédiatement avec le compteur actuel + 1
+    const alertElement = document.getElementById('violation-alert');
+    if (alertElement) {
+        const messageElement = document.getElementById('violation-message');
+        if (messageElement) {
+            const currentViolationCount = violationCount + 1;
+            messageElement.textContent = 'Violation de sécurité détectée (' + currentViolationCount + '/' + maxViolations + ')';
+            console.log(`📊 AFFICHAGE ALERTE: ${currentViolationCount}/${maxViolations}`);
+        }
+        alertElement.style.display = 'block';
+        console.log('✅ ALERTE AFFICHÉE');
+        
+        setTimeout(function() {
+            alertElement.style.display = 'none';
+        }, 5000);
+    } else {
+        console.error('❌ ÉLÉMENT D\'ALERTE NON TROUVÉ');
+    }
+    
+    // Envoyer la violation au serveur
+    const requestData = {
+        violation: 'Violation de type: ' + violationType,
+        violation_type: violationType,
+        url: window.location.href,
+        violation_count: violationCount
+    };
+    
+    console.log('📤 Envoi de la violation au serveur:', requestData);
+    
+    fetch('/test/security-violation/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => {
+        console.log('📡 Réponse reçue:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('📊 Données reçues du serveur:', data);
+        
+        // Mettre à jour le compteur local avec la réponse du serveur
+        if (data.violation_count !== undefined) {
+            violationCount = data.violation_count;
+            console.log(`📊 COMPTEUR MIS À JOUR: ${violationCount}/${maxViolations}`);
+            
+            // Mettre à jour l'alerte avec le compteur réel
+            const alertElement = document.getElementById('violation-alert');
+            if (alertElement) {
+                const messageElement = document.getElementById('violation-message');
+                if (messageElement) {
+                    messageElement.textContent = 'Violation de sécurité détectée (' + violationCount + '/' + maxViolations + ')';
+                    console.log(`📊 ALERTE MISE À JOUR: ${violationCount}/${maxViolations}`);
+                }
+            }
+        }
+        
+        // Vérifier si le test doit être terminé
+        if (data.status === 'terminated' || violationCount >= maxViolations) {
+            console.log('🚨 TEST TERMINÉ PAR LE SERVEUR');
+            
+            // Désactiver tous les éléments immédiatement
+            document.querySelectorAll('input, button, textarea').forEach(function(el) {
+                el.disabled = true;
+                console.log('🔒 Élément désactivé:', el);
+            });
+            
+            // Afficher l'alerte finale
+            alert('Test terminé automatiquement en raison de violations répétées.');
+            
+            // Redirection immédiate
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                window.location.href = '{% url "celica_web:test_terminated" %}';
+            }
+        }
+    })
+    .catch(function(error) {
+        console.warn('❌ Erreur lors de l\'enregistrement de la violation:', error);
+    });
+}
+
+// ÉVÉNEMENTS DE SÉCURITÉ ET GESTION DES RÉPONSES
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 INITIALISATION COMPLÈTE DU SYSTÈME');
+    
+    // Marquer que la page vient de se charger (éviter les fausses violations)
+    isPageTransitioning = true;
+    setTimeout(() => {
+        isPageTransitioning = false;
+        console.log('✅ PÉRIODE DE TRANSITION TERMINÉE');
+    }, 1000);
+    
+    // === ÉVÉNEMENTS DE SÉCURITÉ ===
+    console.log('🔒 ATTACHEMENT DES ÉVÉNEMENTS DE SÉCURITÉ');
+    
+    // 1. CLIC DROIT
+    document.addEventListener('contextmenu', function(e) {
+        console.log('🖱️ CLIC DROIT DÉTECTÉ');
+        e.preventDefault();
+        handleSecurityViolation('right_click');
+        return false;
+    });
+    
+    // 2. RACCOURCIS CLAVIER
+    document.addEventListener('keydown', function(e) {
+        // Touches interdites
+        const forbiddenKeys = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'PrintScreen'];
+        if (forbiddenKeys.includes(e.key)) {
+            console.log(`⌨️ TOUCHE INTERDITE: ${e.key}`);
+            e.preventDefault();
+            handleSecurityViolation('keyboard_shortcut', { key: e.key });
+            return false;
+        }
+        
+        // Combinaisons Ctrl
+        if (e.ctrlKey) {
+            const ctrlCombos = ['c', 'v', 'x', 'a', 'z', 'y', 's', 'p', 'u', 'i', 'j', 'k'];
+            if (ctrlCombos.includes(e.key.toLowerCase())) {
+                console.log(`⌨️ CTRL+${e.key} DÉTECTÉ`);
+                e.preventDefault();
+                handleSecurityViolation('keyboard_shortcut', { key: e.key, ctrl: true });
+                return false;
+            }
+        }
+    });
+    
+    // 3. COPIE/COLLAGE
+    document.addEventListener('copy', function(e) {
+        console.log('📋 COPIE DÉTECTÉE');
+        e.preventDefault();
+        handleSecurityViolation('copy_attempt');
+        return false;
+    });
+    
+    document.addEventListener('paste', function(e) {
+        console.log('📋 COLLAGE DÉTECTÉ');
+        e.preventDefault();
+        handleSecurityViolation('paste_attempt');
+        return false;
+    });
+    
+    // 4. CHANGEMENT D'ONGLET
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !isPageTransitioning && !isFormSubmitting) {
+            console.log('📑 CHANGEMENT D\'ONGLET DÉTECTÉ');
+            handleSecurityViolation('tab_switch');
+        } else if (document.hidden) {
+            console.log('📑 CHANGEMENT D\'ONGLET IGNORÉ (transition de page)');
+        }
+    });
+    
+    // 5. PERTE DE FOCUS
+    window.addEventListener('blur', function() {
+        if (!isPageTransitioning && !isFormSubmitting) {
+            console.log('🪟 PERTE DE FOCUS DÉTECTÉE');
+            handleSecurityViolation('window_blur');
+        } else {
+            console.log('🪟 PERTE DE FOCUS IGNORÉE (transition de page)');
+        }
+    });
+    
+    console.log('✅ ÉVÉNEMENTS DE SÉCURITÉ ATTACHÉS');
+    
+    // === GESTION DES RÉPONSES ===
+    console.log('🎯 INITIALISATION DE LA GESTION DES RÉPONSES');
+    
+    const answerItems = document.querySelectorAll('.answer-item');
+    const form = document.getElementById('questionForm');
+    const saveIndicator = document.getElementById('saveIndicator');
+    const textAnswer = document.getElementById('textAnswer');
+    const charCount = document.getElementById('charCount');
+    
+    console.log(`📊 ÉLÉMENTS TROUVÉS:`);
+    console.log(`- Réponses: ${answerItems.length}`);
+    console.log(`- Formulaire: ${form ? 'OUI' : 'NON'}`);
+    console.log(`- Indicateur: ${saveIndicator ? 'OUI' : 'NON'}`);
+    
+    // Initialiser les réponses sélectionnées
+    answerItems.forEach((item, index) => {
+        const input = item.querySelector('input');
+        if (input && input.checked) {
+            item.classList.add('selected');
+            console.log(`✅ Réponse ${index + 1} déjà sélectionnée`);
+        }
+    });
+
+    // Fonction pour s'assurer que le token CSRF est présent et valide
+    function ensureCSRFToken(form) {
+        let csrfToken = form.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfToken) {
+            csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrfmiddlewaretoken';
+            form.appendChild(csrfToken);
+        }
+        
+        // Récupérer le token depuis le meta tag en priorité
+        const metaToken = document.querySelector('meta[name=csrf-token]')?.getAttribute('content');
+        if (metaToken) {
+            csrfToken.value = metaToken;
+            console.log('✅ TOKEN CSRF RÉCUPÉRÉ DEPUIS LE META TAG');
+        }
+        
+        // Vérifier que le token n'est pas vide
+        if (!csrfToken.value) {
+            console.warn('⚠️ TOKEN CSRF MANQUANT - RÉCUPÉRATION DEPUIS LE COOKIE...');
+            // Essayer de récupérer depuis le cookie
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    csrfToken.value = value;
+                    console.log('✅ TOKEN CSRF RÉCUPÉRÉ DEPUIS LE COOKIE');
+                    break;
+                }
+            }
+        }
+        
+        // Vérification finale
+        if (!csrfToken.value) {
+            console.error('❌ TOKEN CSRF TOUJOURS MANQUANT');
+            return false;
+        }
+        
+        console.log('🔑 TOKEN CSRF VALIDE:', csrfToken.value.substring(0, 10) + '...');
+        return csrfToken.value;
+    }
+
+    // Fonction pour rafraîchir le token CSRF si nécessaire
+    function refreshCSRFToken() {
+        const metaToken = document.querySelector('meta[name=csrf-token]');
+        if (metaToken) {
+            const currentToken = metaToken.getAttribute('content');
+            // Mettre à jour tous les formulaires avec le nouveau token
+            document.querySelectorAll('form').forEach(form => {
+                const csrfInput = form.querySelector('[name=csrfmiddlewaretoken]');
+                if (csrfInput) {
+                    csrfInput.value = currentToken;
+                }
+            });
+            console.log('🔄 TOKEN CSRF RAFRAÎCHI');
+        }
+    }
+
+    // Gestion des clics sur les réponses avec passage automatique
+    console.log('🎯 ATTACHEMENT DES ÉVÉNEMENTS DE CLIC');
+    answerItems.forEach((item, index) => {
+        item.addEventListener('click', function(e) {
+            console.log(`🖱️ CLIC SUR RÉPONSE ${index + 1}`);
+            
+            const input = this.querySelector('input');
+            if (!input) {
+                console.log('❌ INPUT NON TROUVÉ');
+                return;
+            }
+
+            // Highlight sélection immédiat
+            answerItems.forEach(it => it.classList.remove('selected'));
+            this.classList.add('selected');
+            input.checked = true;
+            console.log(`✅ Réponse ${index + 1} sélectionnée`);
+
+            // Soumettre immédiatement la réponse
+            const form = document.getElementById('questionForm');
+            if (form) {
+                console.log('📝 SOUMISSION DU FORMULAIRE');
+                
+                // S'assurer que le token CSRF est présent
+                const token = ensureCSRFToken(form);
+                if (!token) {
+                    console.error('❌ TOKEN CSRF MANQUANT - RECHARGEMENT DE LA PAGE');
+                    alert('Erreur de sécurité détectée. La page va être rechargée.');
+                    window.location.reload();
+                    return;
+                }
+                console.log(`🔑 TOKEN CSRF: PRÉSENT (${token.substring(0, 10)}...)`);
+                
+                form.querySelector('input[name="action"]').value = 'save_and_next';
+                
+                // Afficher un indicateur de chargement
+                const saveIndicator = document.getElementById('saveIndicator');
+                if (saveIndicator) {
+                    saveIndicator.style.display = 'block';
+                    saveIndicator.querySelector('#saveText').textContent = 'Sauvegarde et passage automatique...';
+                    console.log('💾 INDICATEUR DE SAUVEGARDE AFFICHÉ');
+                }
+                
+                // Désactiver temporairement les clics pour éviter les doubles soumissions
+                answerItems.forEach(item => {
+                    item.style.pointerEvents = 'none';
+                    item.style.opacity = '0.7';
+                });
+                console.log('🔒 RÉPONSES DÉSACTIVÉES');
+                
+                // Soumettre le formulaire après un court délai pour l'effet visuel
+                setTimeout(() => {
+                    console.log('🚀 SOUMISSION DU FORMULAIRE');
+                    
+                    // Marquer que nous sommes en train de soumettre le formulaire
+                    isFormSubmitting = true;
+                    isPageTransitioning = true;
+                    
+                    // Rafraîchir le token CSRF avant soumission
+                    refreshCSRFToken();
+                    
+                    // Vérifier une dernière fois que le token est présent
+                    const finalToken = ensureCSRFToken(form);
+                    if (!finalToken) {
+                        console.error('❌ TOKEN CSRF MANQUANT - RECHARGEMENT DE LA PAGE');
+                        alert('Erreur de sécurité détectée. La page va être rechargée.');
+                        window.location.reload();
+                        return;
+                    }
+                    
+                    form.submit();
+                }, 300);
+            } else {
+                console.log('❌ FORMULAIRE NON TROUVÉ');
+            }
+        });
+        console.log(`✅ Événement de clic attaché à la réponse ${index + 1}`);
+    });
+
+    // Gestion du compteur de caractères
+    if (textAnswer && charCount) {
+        textAnswer.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+        });
+    }
+
+    // Timer
+    console.log('⏰ INITIALISATION DU TIMER');
+    let tempsRestant = parseInt('{{ temps_restant_seconds|default:60 }}');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timerTime = document.getElementById('timerTime');
+    
+    console.log(`⏰ TEMPS RESTANT: ${tempsRestant} secondes`);
+    console.log(`⏰ TIMER DISPLAY: ${timerDisplay ? 'TROUVÉ' : 'NON TROUVÉ'}`);
+    console.log(`⏰ TIMER TIME: ${timerTime ? 'TROUVÉ' : 'NON TROUVÉ'}`);
+    
+    if (timerTime && tempsRestant > 0) {
+        const timerInterval = setInterval(() => {
+            const minutes = Math.floor(tempsRestant / 60);
+            const secondes = tempsRestant % 60;
+            
+            console.log(`⏰ TEMPS: ${minutes}m ${secondes.toString().padStart(2,'0')}s`);
+            
+            if (tempsRestant <= 0) {
+                clearInterval(timerInterval);
+                console.log('⏰ TEMPS ÉCOULÉ - SOUMISSION AUTOMATIQUE');
+                const form = document.getElementById('questionForm');
+                if (form) {
+                    form.submit();
+                }
+            } else {
+                timerTime.textContent = `${minutes}m ${secondes.toString().padStart(2,'0')}s`;
+                
+                if (tempsRestant <= 300) {
+                    timerDisplay.className = 'timer-display danger';
+                } else if (tempsRestant <= 600) {
+                    timerDisplay.className = 'timer-display warning';
+                }
+            }
+            
+            tempsRestant--;
+        }, 1000);
+        console.log('✅ TIMER DÉMARRÉ');
+    } else {
+        console.log('❌ TIMER NON DÉMARRÉ - ÉLÉMENTS MANQUANTS');
+    }
+
+    // Gestion de la soumission du formulaire
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('📝 SOUMISSION DU FORMULAIRE DÉTECTÉE');
+            
+            // Marquer que nous sommes en train de soumettre le formulaire
+            isFormSubmitting = true;
+            isPageTransitioning = true;
+            
+            // Nettoyer le localStorage lors de la fin du test
+            if (e.submitter && e.submitter.value === 'finish_test') {
+                console.log('🏁 FIN DU TEST - NETTOYAGE DU LOCALSTORAGE');
+                localStorage.removeItem(testSessionKey);
+                localStorage.removeItem(testStartKey);
+                console.log('🧹 LocalStorage nettoyé');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

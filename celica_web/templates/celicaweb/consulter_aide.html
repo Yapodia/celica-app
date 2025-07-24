@@ -1,0 +1,375 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Centre d'Aide - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <div class="card p-4 border rounded shadow-sm bg-light">
+            <!-- En-tête -->
+            <div class="text-center mb-4">
+                <h4 class="card-title">
+                    <i class="fas fa-question-circle me-2 text-primary"></i>Centre d'Aide CelicaWeb
+                </h4>
+                <p class="card-text">
+                    <span class="badge bg-info">Support</span>
+                    <small class="text-muted ms-2">Trouvez rapidement les réponses à vos questions</small>
+                </p>
+            </div>
+
+            <!-- Barre de recherche -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" id="searchHelp" class="form-control" 
+                                       placeholder="Rechercher dans l'aide (mots-clés, titre, contenu...)">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="categoryFilter" class="form-select">
+                                <option value="">Toutes les catégories</option>
+                                <option value="general">Aide générale</option>
+                                <option value="navigation">Navigation</option>
+                                <option value="tests">Gestion des tests</option>
+                                <option value="cours">Gestion des cours</option>
+                                <option value="resultats">Consultation des résultats</option>
+                                <option value="technique">Support technique</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aide par catégories -->
+            {% if aides %}
+                <!-- Statistiques rapides -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center bg-primary text-white h-100">
+                            <div class="card-body py-3">
+                                <i class="fas fa-book-open fa-2x mb-2"></i>
+                                <h5 class="mb-1">{{ aides.count }}</h5>
+                                <small>Articles d'aide</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center bg-success text-white h-100">
+                            <div class="card-body py-3">
+                                <i class="fas fa-tags fa-2x mb-2"></i>
+                                <h5 class="mb-1">
+                                    {% regroup aides by categorie as categories_list %}
+                                    {{ categories_list|length }}
+                                </h5>
+                                <small>Catégories</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center bg-info text-white h-100">
+                            <div class="card-body py-3">
+                                <i class="fas fa-eye fa-2x mb-2"></i>
+                                <h5 class="mb-1">
+                                    {% for aide in aides %}
+                                        {% if aide.visible %}{{ forloop.counter0|add:1 }}{% endif %}
+                                    {% endfor %}
+                                </h5>
+                                <small>Visibles</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center bg-warning text-white h-100">
+                            <div class="card-body py-3">
+                                <i class="fas fa-headset fa-2x mb-2"></i>
+                                <h5 class="mb-1">24/7</h5>
+                                <small>Support</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Articles d'aide organisés par catégorie -->
+                {% regroup aides by categorie as categories_list %}
+                
+                <div id="helpContainer">
+                    {% for category in categories_list %}
+                    <div class="category-section mb-4" data-category="{{ category.grouper }}">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-
+                                        {% if category.grouper == 'general' %}info-circle
+                                        {% elif category.grouper == 'navigation' %}compass
+                                        {% elif category.grouper == 'tests' %}clipboard-list
+                                        {% elif category.grouper == 'cours' %}book
+                                        {% elif category.grouper == 'resultats' %}chart-bar
+                                        {% elif category.grouper == 'technique' %}cogs
+                                        {% else %}question-circle{% endif %} me-2 text-primary"></i>
+                                    {% if category.grouper == 'general' %}Aide générale
+                                    {% elif category.grouper == 'navigation' %}Navigation
+                                    {% elif category.grouper == 'tests' %}Gestion des tests
+                                    {% elif category.grouper == 'cours' %}Gestion des cours
+                                    {% elif category.grouper == 'resultats' %}Consultation des résultats
+                                    {% elif category.grouper == 'technique' %}Support technique
+                                    {% else %}{{ category.grouper|title }}{% endif %}
+                                    <span class="badge bg-secondary ms-2">{{ category.list|length }}</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for aide in category.list %}
+                                    {% if aide.visible %}
+                                    <div class="col-lg-6 mb-3 help-item" 
+                                         data-title="{{ aide.titre|lower }}" 
+                                         data-content="{{ aide.contenu|lower }}"
+                                         data-keywords="{{ aide.mots_cles|lower }}">
+                                        <div class="card h-100 border-start border-primary border-3">
+                                            <div class="card-body p-3">
+                                                <h6 class="card-title text-primary mb-2">
+                                                    <i class="fas fa-lightbulb me-2"></i>{{ aide.titre }}
+                                                </h6>
+                                                <p class="card-text text-muted mb-3">
+                                                    {{ aide.contenu|truncatewords:25 }}
+                                                </p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-calendar me-1"></i>
+                                                        {{ aide.date_creation|date:"d/m/Y" }}
+                                                    </small>
+                                                    <button class="btn btn-outline-primary btn-sm" 
+                                                            onclick="showFullHelp({{ aide.id }}, '{{ aide.titre|escapejs }}', '{{ aide.contenu|escapejs }}')">
+                                                        <i class="fas fa-plus me-1"></i>Voir plus
+                                                    </button>
+                                                </div>
+                                                {% if aide.mots_cles %}
+                                                <div class="mt-2">
+                                                    <span class="badge bg-light text-dark">{{ aide.mots_cles }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Message si aucun résultat de recherche -->
+                <div id="noResults" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun article trouvé</h5>
+                    <p class="text-muted">Essayez d'autres mots-clés ou contactez le support</p>
+                </div>
+
+            {% else %}
+                <!-- État vide -->
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-book-open fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">Centre d'aide en cours de construction</h4>
+                        <p class="text-muted mb-4">
+                            Nous préparons du contenu d'aide pour vous. En attendant, contactez directement le support.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Section de contact support -->
+            <div class="card mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-headset me-2"></i>Besoin d'aide supplémentaire ?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Contactez notre équipe de support</h6>
+                            <p class="text-muted mb-3">
+                                Si vous ne trouvez pas la réponse à votre question, notre équipe est là pour vous aider.
+                            </p>
+                            
+                            <!-- Formulaire de contact rapide -->
+                            <form method="post" class="contact-form">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="sujet" class="form-label">Sujet de votre demande</label>
+                                    <input type="text" class="form-control" id="sujet" name="sujet" 
+                                           placeholder="Décrivez brièvement votre problème" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="message" class="form-label">Description détaillée</label>
+                                    <textarea class="form-control" id="message" name="message" rows="4" 
+                                              placeholder="Expliquez votre problème en détail..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Envoyer la demande
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Autres moyens de contact</h6>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item border-0 px-0">
+                                    <i class="fas fa-envelope text-primary me-2"></i>
+                                    <strong>Email:</strong> admin@celicaweb.com
+                                </div>
+                                <div class="list-group-item border-0 px-0">
+                                    <i class="fas fa-clock text-success me-2"></i>
+                                    <strong>Délai de réponse:</strong> 24-48h
+                                </div>
+                                <div class="list-group-item border-0 px-0">
+                                    <i class="fas fa-shield-alt text-info me-2"></i>
+                                    <strong>Priorité:</strong> Support technique urgent
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour afficher l'aide complète -->
+<div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="helpModalTitle">
+                    <i class="fas fa-lightbulb me-2"></i>Article d'aide
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="helpModalContent">
+                <!-- Le contenu sera injecté ici -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" onclick="openSupportForm()">
+                    <i class="fas fa-headset me-2"></i>Contacter le support
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchHelp');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const helpContainer = document.getElementById('helpContainer');
+    const noResults = document.getElementById('noResults');
+
+    function filterHelp() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const categoryValue = categoryFilter.value;
+        
+        let visibleSections = 0;
+        let totalVisibleItems = 0;
+
+        document.querySelectorAll('.category-section').forEach(section => {
+            const sectionCategory = section.dataset.category;
+            let sectionVisible = false;
+            let sectionItemCount = 0;
+
+            // Filtre par catégorie
+            if (categoryValue && sectionCategory !== categoryValue) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Filtrer les éléments dans cette section
+            section.querySelectorAll('.help-item').forEach(item => {
+                let show = true;
+
+                if (searchTerm) {
+                    const title = item.dataset.title || '';
+                    const content = item.dataset.content || '';
+                    const keywords = item.dataset.keywords || '';
+                    
+                    if (!title.includes(searchTerm) && 
+                        !content.includes(searchTerm) && 
+                        !keywords.includes(searchTerm)) {
+                        show = false;
+                    }
+                }
+
+                if (show) {
+                    item.style.display = 'block';
+                    sectionVisible = true;
+                    sectionItemCount++;
+                    totalVisibleItems++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (sectionVisible && sectionItemCount > 0) {
+                section.style.display = 'block';
+                visibleSections++;
+            } else {
+                section.style.display = 'none';
+            }
+        });
+
+        // Afficher/masquer le message "aucun résultat"
+        if (totalVisibleItems === 0) {
+            noResults.style.display = 'block';
+            helpContainer.style.display = 'none';
+        } else {
+            noResults.style.display = 'none';
+            helpContainer.style.display = 'block';
+        }
+    }
+
+    // Événements pour les filtres
+    searchInput.addEventListener('input', filterHelp);
+    categoryFilter.addEventListener('change', filterHelp);
+});
+
+function showFullHelp(id, title, content) {
+    document.getElementById('helpModalTitle').innerHTML = '<i class="fas fa-lightbulb me-2"></i>' + title;
+    document.getElementById('helpModalContent').innerHTML = '<div class="text-break">' + content.replace(/\n/g, '<br>') + '</div>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('helpModal'));
+    modal.show();
+}
+
+function openSupportForm() {
+    // Fermer la modal d'aide et scroller vers le formulaire de contact
+    const modal = bootstrap.Modal.getInstance(document.getElementById('helpModal'));
+    if (modal) modal.hide();
+    
+    document.querySelector('.contact-form').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+    });
+    
+    // Focus sur le champ sujet
+    setTimeout(() => {
+        document.getElementById('sujet').focus();
+    }, 500);
+}
+
+// Autocomplétion pour le champ de recherche
+document.getElementById('searchHelp').addEventListener('input', function(e) {
+    const value = e.target.value.toLowerCase();
+    if (value.length >= 2) {
+        // Ici on pourrait ajouter des suggestions basées sur les mots-clés
+        // Pour l'instant, on se contente du filtrage en temps réel
+    }
+});
+</script>
+{% endblock %}

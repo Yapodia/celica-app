@@ -1,0 +1,352 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Plannings - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <div class="card p-4 border rounded shadow-sm bg-light">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2 text-primary"></i>Gestion des Plannings
+                    </h4>
+                    <p class="card-text mb-0">
+                        <span class="badge bg-info">Organisation</span>
+                        <small class="text-muted ms-2">Planification des sessions et tests</small>
+                    </p>
+                </div>
+                {% if perms.celica_web.gerer_plannings %}
+                <div>
+                    <a href="{% url 'celica_web:planning_add' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Nouveau Planning
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center bg-primary text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ plannings.count }}</h5>
+                            <small>Total Plannings</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center bg-success text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-play-circle fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ nb_en_cours }}</h5>
+                            <small>En Cours</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center bg-warning text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-clock fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ nb_planifies }}</h5>
+                            <small>Planifiés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center bg-info text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ nb_termines }}</h5>
+                            <small>Terminés</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres et recherche -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Filtres et Recherche
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Rechercher</label>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Titre, test, instructeur...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Statut</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">Tous les statuts</option>
+                                <option value="planifie">Planifié</option>
+                                <option value="en_cours">En cours</option>
+                                <option value="termine">Terminé</option>
+                                <option value="annule">Annulé</option>
+                                <option value="reporte">Reporté</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Période</label>
+                            <select id="periodFilter" class="form-select">
+                                <option value="">Toutes les périodes</option>
+                                <option value="today">Aujourd'hui</option>
+                                <option value="week">Cette semaine</option>
+                                <option value="month">Ce mois</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                                <i class="fas fa-undo me-2"></i>Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des plannings -->
+            {% if plannings %}
+                <div class="row" id="planningsContainer">
+                    {% for planning in plannings %}
+                    <div class="col-lg-6 mb-4 planning-card" 
+                         data-status="{{ planning.statut }}" 
+                         data-title="{{ planning.titre|lower }}"
+                         data-test="{% if planning.test %}{{ planning.test.titre|lower }}{% endif %}"
+                         data-date="{{ planning.date_debut|date:'Y-m-d' }}">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-calendar me-2 text-primary"></i>
+                                    {{ planning.titre }}
+                                </h6>
+                                <span class="badge 
+                                    {% if planning.statut == 'planifie' %}bg-warning
+                                    {% elif planning.statut == 'en_cours' %}bg-success
+                                    {% elif planning.statut == 'termine' %}bg-info
+                                    {% elif planning.statut == 'annule' %}bg-danger
+                                    {% elif planning.statut == 'reporte' %}bg-secondary
+                                    {% else %}bg-dark{% endif %}">
+                                    {{ planning.get_statut_display }}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <small class="text-muted">Début</small>
+                                        <div class="fw-bold">
+                                            <i class="fas fa-calendar-day me-1"></i>
+                                            {{ planning.date_debut|date:"d/m/Y" }}
+                                        </div>
+                                        <div class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ planning.date_debut|date:"H:i" }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Fin</small>
+                                        <div class="fw-bold">
+                                            <i class="fas fa-calendar-day me-1"></i>
+                                            {{ planning.date_fin|date:"d/m/Y" }}
+                                        </div>
+                                        <div class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ planning.date_fin|date:"H:i" }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if planning.test %}
+                                <div class="mb-2">
+                                    <small class="text-muted">Test associé</small>
+                                    <div class="text-primary fw-bold">
+                                        <i class="fas fa-clipboard-list me-1"></i>
+                                        {{ planning.test.titre }}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if planning.description %}
+                                <div class="mb-2">
+                                    <small class="text-muted">Description</small>
+                                    <div class="text-truncate" title="{{ planning.description }}">
+                                        {{ planning.description|truncatewords:15 }}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if planning.lieu %}
+                                <div class="mb-2">
+                                    <small class="text-muted">Lieu</small>
+                                    <div>
+                                        <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                                        {{ planning.lieu }}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="mb-2">
+                                    <small class="text-muted">Durée</small>
+                                    <div>
+                                        <i class="fas fa-stopwatch me-1 text-warning"></i>
+                                        {% if planning.test and planning.test.duree %}
+                                            {{ planning.test.duree }} min
+                                        {% else %}
+                                            {{ planning.duree_formatee }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if perms.celica_web.gerer_plannings %}
+                            <div class="card-footer bg-light">
+                                <div class="btn-group w-100" role="group">
+                                    <a href="{% url 'celica_web:planning_edit' planning_id=planning.id %}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit me-1"></i>Modifier
+                                    </a>
+                                    <a href="{% url 'celica_web:planning_delete' planning_id=planning.id %}" 
+                                       class="btn btn-outline-danger btn-sm"
+                                       onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce planning ?')">
+                                        <i class="fas fa-trash me-1"></i>Supprimer
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Message si aucun planning après filtrage -->
+                <div id="noResults" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun planning trouvé</h5>
+                    <p class="text-muted">Essayez de modifier vos critères de recherche</p>
+                </div>
+
+            {% else %}
+                <!-- État vide -->
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-plus fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">Aucun planning créé</h4>
+                        <p class="text-muted mb-4">
+                            Commencez par créer votre premier planning pour organiser vos sessions de test.
+                        </p>
+                        {% if perms.celica_web.gerer_plannings %}
+                        <a href="{% url 'celica_web:planning_add' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Créer un Planning
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const periodFilter = document.getElementById('periodFilter');
+    const planningsContainer = document.getElementById('planningsContainer');
+    const noResults = document.getElementById('noResults');
+
+    function filterPlannings() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const periodValue = periodFilter.value;
+        const cards = document.querySelectorAll('.planning-card');
+        let visibleCount = 0;
+
+        const today = new Date();
+        const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        cards.forEach(card => {
+            let show = true;
+
+            // Filtre par recherche
+            if (searchTerm) {
+                const title = card.dataset.title || '';
+                const test = card.dataset.test || '';
+                if (!title.includes(searchTerm) && !test.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+
+            // Filtre par statut
+            if (statusValue && card.dataset.status !== statusValue) {
+                show = false;
+            }
+
+            // Filtre par période
+            if (periodValue) {
+                const cardDate = new Date(card.dataset.date);
+                switch(periodValue) {
+                    case 'today':
+                        if (cardDate.toDateString() !== today.toDateString()) {
+                            show = false;
+                        }
+                        break;
+                    case 'week':
+                        if (cardDate < weekStart) {
+                            show = false;
+                        }
+                        break;
+                    case 'month':
+                        if (cardDate < monthStart) {
+                            show = false;
+                        }
+                        break;
+                }
+            }
+
+            if (show) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Afficher/masquer le message "aucun résultat"
+        if (planningsContainer) {
+            if (visibleCount === 0 && cards.length > 0) {
+                noResults.style.display = 'block';
+                planningsContainer.style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                planningsContainer.style.display = 'flex';
+            }
+        }
+    }
+
+    // Événements pour les filtres
+    searchInput.addEventListener('input', filterPlannings);
+    statusFilter.addEventListener('change', filterPlannings);
+    periodFilter.addEventListener('change', filterPlannings);
+});
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('periodFilter').value = '';
+    
+    // Réafficher toutes les cartes
+    document.querySelectorAll('.planning-card').forEach(card => {
+        card.style.display = 'block';
+    });
+    
+    document.getElementById('noResults').style.display = 'none';
+    const container = document.getElementById('planningsContainer');
+    if (container) container.style.display = 'flex';
+}
+</script>{% endblock %}

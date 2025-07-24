@@ -1,0 +1,456 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Ajouter un Utilisateur - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Ajouter un Nouvel Utilisateur
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Affichage des messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Erreurs générales du formulaire -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <strong>Erreurs :</strong>
+                            <ul class="mb-0">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <!-- Formulaire -->
+                    <form method="post" class="row g-3 needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Ordre demandé : Nom, Prénom, Matricule, Email, Mot de passe, puis autres -->
+                        <!-- 1. Nom -->
+                        <div class="col-md-6">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                <i class="fas fa-user me-1"></i>{{ form.last_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.help_text %}
+                                <small class="form-text text-muted">{{ form.last_name.help_text }}</small>
+                            {% endif %}
+                            {% if form.last_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.last_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 2. Prénom -->
+                        <div class="col-md-6">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                <i class="fas fa-user me-1"></i>{{ form.first_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.help_text %}
+                                <small class="form-text text-muted">{{ form.first_name.help_text }}</small>
+                            {% endif %}
+                            {% if form.first_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.first_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 3. Matricule -->
+                        <div class="col-md-6">
+                            <label for="{{ form.matricule.id_for_label }}" class="form-label">
+                                <i class="fas fa-id-card me-1"></i>{{ form.matricule.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.matricule }}
+                            {% if form.matricule.help_text %}
+                                <small class="form-text text-muted">{{ form.matricule.help_text }}</small>
+                            {% endif %}
+                            {% if form.matricule.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.matricule.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 4. Email -->
+                        <div class="col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>{{ form.email.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.help_text %}
+                                <small class="form-text text-muted">{{ form.email.help_text }}</small>
+                            {% endif %}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 5. Mot de passe -->
+                        <div class="col-md-6">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock me-1"></i>{{ form.password.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.password }}
+                            {% if form.password.help_text %}
+                                <small class="form-text text-muted">{{ form.password.help_text }}</small>
+                            {% endif %}
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 6. Confirmer le mot de passe -->
+                        <div class="col-md-6">
+                            <label for="{{ form.confirm_password.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock me-1"></i>{{ form.confirm_password.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.confirm_password }}
+                            {% if form.confirm_password.help_text %}
+                                <small class="form-text text-muted">{{ form.confirm_password.help_text }}</small>
+                            {% endif %}
+                            {% if form.confirm_password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.confirm_password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 7. Rôle -->
+                        <div class="col-md-6">
+                            <label for="{{ form.role.id_for_label }}" class="form-label">
+                                <i class="fas fa-user-tag me-1"></i>{{ form.role.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.role }}
+                            {% if form.role.help_text %}
+                                <small class="form-text text-muted">{{ form.role.help_text }}</small>
+                            {% endif %}
+                            {% if form.role.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.role.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Séparateur -->
+                        <div class="col-12">
+                            <hr class="my-3">
+                            <h6 class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>Informations complémentaires (optionnel)
+                            </h6>
+                        </div>
+
+                        <!-- 8. Statut -->
+                        <div class="col-md-6">
+                            <label for="{{ form.statut.id_for_label }}" class="form-label">
+                                <i class="fas fa-toggle-on me-1"></i>{{ form.statut.label }}
+                            </label>
+                            {{ form.statut }}
+                            {% if form.statut.help_text %}
+                                <small class="form-text text-muted">{{ form.statut.help_text }}</small>
+                            {% endif %}
+                            {% if form.statut.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.statut.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 9. Spécialité -->
+                        <div class="col-md-6">
+                            <label for="{{ form.specialite.id_for_label }}" class="form-label">
+                                <i class="fas fa-graduation-cap me-1"></i>{{ form.specialite.label }}
+                            </label>
+                            {{ form.specialite }}
+                            {% if form.specialite.help_text %}
+                                <small class="form-text text-muted">{{ form.specialite.help_text }}</small>
+                            {% endif %}
+                            {% if form.specialite.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.specialite.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 10. Niveau -->
+                        <div class="col-md-6">
+                            <label for="{{ form.niveau.id_for_label }}" class="form-label">
+                                <i class="fas fa-level-up-alt me-1"></i>{{ form.niveau.label }}
+                            </label>
+                            {{ form.niveau }}
+                            {% if form.niveau.help_text %}
+                                <small class="form-text text-muted">{{ form.niveau.help_text }}</small>
+                            {% endif %}
+                            {% if form.niveau.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.niveau.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 11. Date de naissance -->
+                        <div class="col-md-6">
+                            <label for="{{ form.date_naissance.id_for_label }}" class="form-label">
+                                <i class="fas fa-birthday-cake me-1"></i>{{ form.date_naissance.label }}
+                            </label>
+                            {{ form.date_naissance }}
+                            {% if form.date_naissance.help_text %}
+                                <small class="form-text text-muted">{{ form.date_naissance.help_text }}</small>
+                            {% endif %}
+                            {% if form.date_naissance.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.date_naissance.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 12. Date de préinscription -->
+                        <div class="col-md-6">
+                            <label for="{{ form.date_preinscription.id_for_label }}" class="form-label">
+                                <i class="fas fa-calendar-plus me-1"></i>{{ form.date_preinscription.label }}
+                            </label>
+                            {{ form.date_preinscription }}
+                            {% if form.date_preinscription.help_text %}
+                                <small class="form-text text-muted">{{ form.date_preinscription.help_text }}</small>
+                            {% endif %}
+                            {% if form.date_preinscription.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.date_preinscription.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="col-12">
+                            <hr class="my-3">
+                            <div class="d-flex justify-content-center gap-3">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save me-2"></i>Créer l'utilisateur
+                                </button>
+                                <a href="{% url 'celica_web:gerer_utilisateurs' %}" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-times me-2"></i>Annuler
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aide contextuelle -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle text-info me-2"></i>Aide
+                    </h6>
+                    <ul class="mb-0">
+                        <li><strong>Champs obligatoires</strong> : Nom, Prénom, Matricule, Email, Mot de passe, Confirmation et Rôle</li>
+                        <li><strong>Matricule</strong> : Doit être unique dans le système</li>
+                        <li><strong>Email</strong> : Doit être unique et valide</li>
+                        <li><strong>Mot de passe</strong> : Minimum 8 caractères, doit correspondre à la confirmation</li>
+                        <li><strong>Rôles disponibles</strong> : Administrateur, Instructeur, Apprenant, Visiteur</li>
+                    </ul>
+                </div>            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script de validation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    // Validation en temps réel
+    form.addEventListener('input', function(e) {
+        const field = e.target;
+        validateField(field);
+    });
+    
+    // Validation à la soumission
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+    
+    function validateField(field) {
+        const isValid = field.checkValidity();
+        const feedback = field.parentNode.querySelector('.invalid-feedback');
+        
+        if (isValid) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        } else {
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+        }
+    }
+    
+    function validateForm() {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            }
+        });
+        
+        // Validation spécifique pour l'email
+        const emailField = form.querySelector('input[name="email"]');
+        if (emailField && emailField.value) {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(emailField.value)) {
+                emailField.classList.add('is-invalid');
+                isValid = false;
+            }
+        }
+        
+        // Validation du mot de passe
+        const passwordField = form.querySelector('input[name="password"]');
+        if (passwordField && passwordField.value && passwordField.value.length < 8) {
+            passwordField.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Validation de la confirmation du mot de passe
+        const confirmPasswordField = form.querySelector('input[name="confirm_password"]');
+        if (passwordField && confirmPasswordField) {
+            if (passwordField.value !== confirmPasswordField.value) {
+                confirmPasswordField.classList.add('is-invalid');
+                // Ajouter un message d'erreur dynamique
+                let errorDiv = confirmPasswordField.parentNode.querySelector('.password-mismatch-error');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback d-block password-mismatch-error';
+                    errorDiv.textContent = 'Les mots de passe ne correspondent pas.';
+                    confirmPasswordField.parentNode.appendChild(errorDiv);
+                }
+                isValid = false;
+            } else {
+                confirmPasswordField.classList.remove('is-invalid');
+                // Supprimer le message d'erreur s'il existe
+                const errorDiv = confirmPasswordField.parentNode.querySelector('.password-mismatch-error');
+                if (errorDiv) {
+                    errorDiv.remove();
+                }
+            }
+        }
+        
+        return isValid;
+    }
+    
+    // Animation du bouton lors de la soumission
+    form.addEventListener('submit', function() {
+        if (validateForm()) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Création en cours...';
+            submitBtn.disabled = true;
+        }
+    });
+});
+</script>
+
+<style>
+/* Styles personnalisés */
+.form-control {
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.is-valid {
+    border-color: #198754 !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.btn {
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+hr {
+    margin: 1rem 0;
+    opacity: 0.25;
+}
+</style>{% endblock %}

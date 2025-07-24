@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Confirmation de Suppression</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        p {
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #d9534f;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #c9302c;
+        }
+        a {
+            color: #337ab7;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Confirmer la Suppression</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <p>Êtes-vous sûr de vouloir supprimer cet élément ?</p>
+        <!-- Affichage de l'objet à supprimer (peut varier selon le contexte : user, cours, groupe, etc.) -->
+        {% if user %}
+            <p>Utilisateur : {{ user.last_name }} {{ user.first_name }} ({{ user.email }})</p>
+        {% elif cours %}
+            <p>Cours : {{ cours.titre }}</p>
+        {% elif groupe %}
+            <p>Groupe : {{ groupe.nom }}</p>
+        {% elif planning %}
+            <p>Planning : {{ planning.titre }}</p>
+        {% elif module %}
+            <p>Module : {{ module.nom }}</p>
+        {% elif notification %}
+            <p>Notification : {{ notification.message }}</p>
+        {% endif %}
+        <button type="submit">Oui, Supprimer</button>
+        <!-- Lien de retour dynamique selon le contexte -->
+        {% if user %}
+            <a href="{% url 'celica_web:gerer_utilisateurs' %}">Annuler</a>
+        {% elif cours %}
+            <a href="{% url 'celica_web:cours_list' %}">Annuler</a>
+        {% elif groupe %}
+            {% if user %}
+                <a href="{% url 'celica_web:groupe_gerer_membres' groupe_id=groupe.id %}">Annuler</a>
+            {% else %}
+                <a href="{% url 'celica_web:groupe_list' %}">Annuler</a>
+            {% endif %}
+        {% elif planning %}
+            <a href="{% url 'celica_web:planning_list' %}">Annuler</a>
+        {% elif module %}
+            <a href="{% url 'celica_web:module_list' %}">Annuler</a>
+        {% elif notification %}
+            <a href="{% url 'celica_web:notification_list' %}">Annuler</a>
+        {% endif %}
+    </form>
+</body>
+</html>

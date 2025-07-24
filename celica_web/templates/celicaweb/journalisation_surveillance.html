@@ -1,0 +1,594 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Journalisation et Surveillance - CelicaWeb{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        transition: transform 0.2s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .event-type-badge {
+        font-size: 0.75rem;
+    }
+    
+    .violation-badge {
+        font-size: 0.75rem;
+    }
+    
+    .filter-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+    }
+    
+    .nav-tabs .nav-link.active {
+        border-bottom: 2px solid #dc3545;
+        color: #dc3545;
+    }
+    
+    .pagination .page-link {
+        color: #dc3545;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-shield-alt text-danger me-2"></i>
+                        Journalisation et Surveillance
+                    </h2>
+                    <p class="text-muted mb-0">Surveillance des tests et violations de sécurité</p>
+                </div>
+                <a href="{% url 'celica_web:admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques générales -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-danger mb-1">{{ stats.total_events }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-eye me-1"></i>Événements totaux
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-1">{{ stats.events_30_days }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>30 derniers jours
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-danger mb-1">{{ stats.total_violations }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Violations totales
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-1">{{ stats.violations_30_days }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>30 derniers jours
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filter-section">
+        <h5 class="mb-3">
+            <i class="fas fa-filter me-2"></i>Filtres
+        </h5>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label">Date début</label>
+                <input type="date" class="form-control" name="date_from" value="{{ filters.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Date fin</label>
+                <input type="date" class="form-control" name="date_to" value="{{ filters.date_to }}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Type événement</label>
+                <select class="form-select" name="event_type">
+                    <option value="">Tous</option>
+                    {% for event_type in event_types %}
+                        <option value="{{ event_type.0 }}" {% if filters.event_type == event_type.0 %}selected{% endif %}>
+                            {{ event_type.1 }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Type violation</label>
+                <select class="form-select" name="violation_type">
+                    <option value="">Tous</option>
+                    {% for violation_type in violation_types %}
+                        <option value="{{ violation_type.0 }}" {% if filters.violation_type == violation_type.0 %}selected{% endif %}>
+                            {{ violation_type.1 }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Utilisateur</label>
+                <input type="text" class="form-control" name="user" value="{{ filters.user }}" placeholder="Email...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Test (événements uniquement)</label>
+                <input type="text" class="form-control" name="test" value="{{ filters.test }}" placeholder="Titre...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Filtrer
+                    </button>
+                    <a href="{% url 'celica_web:journalisation_surveillance' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Réinitialiser
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Onglets -->
+    <ul class="nav nav-tabs mb-4" id="journalisationTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">
+                <i class="fas fa-list me-1"></i>Événements ({{ events_page.paginator.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="violations-tab" data-bs-toggle="tab" data-bs-target="#violations" type="button" role="tab">
+                <i class="fas fa-exclamation-triangle me-1"></i>Violations ({{ violations_page.paginator.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab">
+                <i class="fas fa-chart-bar me-1"></i>Statistiques
+            </button>
+        </li>
+    </ul>
+
+    <!-- Contenu des onglets -->
+    <div class="tab-content" id="journalisationTabsContent">
+        <!-- Onglet Événements -->
+        <div class="tab-pane fade show active" id="events" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Événements de test
+                    </h6>
+                    <div>
+                        <button type="button" class="btn btn-info btn-sm" id="deleteAllEventsBtn">
+                            <i class="fas fa-trash-alt me-1"></i>Supprimer tous les événements
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date/Heure</th>
+                                    <th>Utilisateur</th>
+                                    <th>Test</th>
+                                    <th>Type d'événement</th>
+                                    <th>Question</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in events_page %}
+                                <tr>
+                                    <td>
+                                        <small>{{ event.timestamp|date:"d/m/Y H:i:s" }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ event.utilisateur.email }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ event.test.titre|truncatechars:30 }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge event-type-badge bg-info">{{ event.get_event_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if event.question_number %}
+                                            <small>Q{{ event.question_number }}</small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ event.ip_address|default:"-" }}</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <p>Aucun événement trouvé</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% if events_page.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Pagination des événements">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if events_page.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_events={{ events_page.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Précédent</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in events_page.paginator.page_range %}
+                                {% if events_page.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > events_page.number|add:'-3' and num < events_page.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page_events={{ num }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if events_page.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_events={{ events_page.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Suivant</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Onglet Violations -->
+        <div class="tab-pane fade" id="violations" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Violations de sécurité
+                    </h6>
+                    <div>
+                        <button type="button" class="btn btn-warning btn-sm" id="deleteAllViolationsSimpleBtn">
+                            <i class="fas fa-trash-alt me-1"></i>Supprimer toutes les violations
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date/Heure</th>
+                                    <th>Utilisateur</th>
+                                    <th>Type de violation</th>
+                                    <th>Description</th>
+                                    <th>URL</th>
+                                    <th>IP</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for violation in violations_page %}
+                                <tr>
+                                    <td>
+                                        <small>{{ violation.timestamp|date:"d/m/Y H:i:s" }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ violation.utilisateur.email }}</small>
+                                    </td>
+                                    <td>
+                                        {% if violation.violation_type %}
+                                            <span class="badge violation-badge bg-danger">{{ violation.get_violation_type_display }}</span>
+                                        {% else %}
+                                            <span class="badge violation-badge bg-secondary">Non spécifié</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ violation.violation|truncatechars:50 }}</small>
+                                    </td>
+                                    <td>
+                                        {% if violation.url %}
+                                            <small>{{ violation.url|truncatechars:30 }}</small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ violation.ip_address|default:"-" }}</small>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'celica_web:supprimer_violation' violation_id=violation.id %}" 
+                                           class="btn btn-outline-danger btn-sm" 
+                                           title="Supprimer cette violation"
+                                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette violation ?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fas fa-shield-alt fa-2x mb-2"></i>
+                                        <p>Aucune violation trouvée</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% if violations_page.has_other_pages %}
+                <div class="card-footer">
+                    <nav aria-label="Pagination des violations">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if violations_page.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_violations={{ violations_page.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Précédent</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in violations_page.paginator.page_range %}
+                                {% if violations_page.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > violations_page.number|add:'-3' and num < violations_page.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page_violations={{ num }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if violations_page.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page_violations={{ violations_page.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Suivant</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Onglet Statistiques -->
+        <div class="tab-pane fade" id="stats" role="tabpanel">
+            <div class="row">
+                <!-- Types d'événements -->
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-pie me-2"></i>Types d'événements les plus fréquents
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if event_types_stats %}
+                                {% for stat in event_types_stats %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">{{ stat.event_type }}</span>
+                                    <span class="badge bg-primary">{{ stat.count }}</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Types de violations -->
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Types de violations les plus fréquents
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if violation_types_stats %}
+                                {% for stat in violation_types_stats %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">{{ stat.violation_type|default:"Non spécifié" }}</span>
+                                    <span class="badge bg-danger">{{ stat.count }}</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tests les plus surveillés -->
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-eye me-2"></i>Tests les plus surveillés
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if tests_most_monitored %}
+                                {% for stat in tests_most_monitored %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">{{ stat.test__titre|truncatechars:30 }}</span>
+                                    <span class="badge bg-info">{{ stat.event_count }}</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Utilisateurs avec violations -->
+                <div class="col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user-shield me-2"></i>Utilisateurs avec le plus de violations
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if users_most_violations %}
+                                {% for stat in users_most_violations %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">{{ stat.utilisateur__email|truncatechars:25 }}</span>
+                                    <span class="badge bg-warning">{{ stat.violation_count }}</span>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center mb-0">Aucune donnée disponible</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM chargé');
+    console.log('Bootstrap disponible:', typeof bootstrap !== 'undefined');
+    console.log('Bootstrap Modal disponible:', typeof bootstrap?.Modal !== 'undefined');
+    
+    // Gestion des onglets
+    const triggerTabList = [].slice.call(document.querySelectorAll('#journalisationTabs button'))
+    triggerTabList.forEach(function (triggerEl) {
+        const tabTrigger = new bootstrap.Tab(triggerEl)
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault()
+            tabTrigger.show()
+        })
+    })
+    
+
+    
+    // Bouton simple pour supprimer toutes les violations
+    const deleteSimpleButton = document.getElementById('deleteAllViolationsSimpleBtn');
+    if (deleteSimpleButton) {
+        console.log('Bouton de suppression simple trouvé');
+        deleteSimpleButton.addEventListener('click', function() {
+            console.log('Bouton de suppression simple cliqué');
+            if (confirm('⚠️ ATTENTION : Vous êtes sur le point de supprimer TOUTES les violations de sécurité de la base de données.\n\nCette action est irréversible et supprimera définitivement toutes les violations.\n\nÊtes-vous absolument sûr de vouloir continuer ?')) {
+                // Rediriger vers une URL spéciale pour supprimer toutes les violations
+                window.location.href = "{% url 'celica_web:supprimer_toutes_violations' %}?confirm=yes";
+            }
+        });
+    } else {
+        console.log('Bouton de suppression simple non trouvé');
+    }
+    
+    // Bouton pour supprimer tous les événements
+    const deleteEventsButton = document.getElementById('deleteAllEventsBtn');
+    if (deleteEventsButton) {
+        console.log('Bouton de suppression des événements trouvé');
+        deleteEventsButton.addEventListener('click', function() {
+            console.log('Bouton de suppression des événements cliqué');
+            if (confirm('⚠️ ATTENTION : Vous êtes sur le point de supprimer TOUS les événements de test de la base de données.\n\nCette action est irréversible et supprimera définitivement tous les événements.\n\nÊtes-vous absolument sûr de vouloir continuer ?')) {
+                // Rediriger vers une URL spéciale pour supprimer tous les événements
+                window.location.href = "{% url 'celica_web:supprimer_tous_evenements' %}?confirm=yes";
+            }
+        });
+    } else {
+        console.log('Bouton de suppression des événements non trouvé');
+    }
+    
+    // Test du modal
+    const modal = document.getElementById('deleteAllViolationsModal');
+    if (modal) {
+        console.log('Modal trouvé');
+        modal.addEventListener('show.bs.modal', function() {
+            console.log('Modal en cours d\'ouverture');
+        });
+    } else {
+        console.log('Modal non trouvé');
+    }
+    
+    // Animation des statistiques
+    function animateCounters() {
+        const counters = document.querySelectorAll('.stats-card h3');
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent) || 0;
+            let current = 0;
+            const increment = target / 20;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                counter.textContent = Math.floor(current);
+            }, 50);
+        });
+    }
+    
+    // Déclencher l'animation au chargement
+    animateCounters();
+});
+</script>
+{% endblock %} 

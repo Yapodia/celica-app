@@ -1,0 +1,114 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Consulter les Plannings - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Consulter les Plannings</h2>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label for="module" class="form-label">Module</label>
+            <select id="module" name="module" class="form-select" onchange="applyFilters()">
+                <option value="">Tous</option>
+                {% for module in modules %}
+                    <option value="{{ module.id }}" {% if selected_module == module.id %}selected{% endif %}>{{ module.intitule }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="date_debut" class="form-label">Date de début</label>
+            <input type="date" id="date_debut" name="date_debut" class="form-control" value="{{ selected_date_debut|date:'Y-m-d' }}" onchange="applyFilters()">
+        </div>
+        <div class="col-md-3">
+            <label for="date_fin" class="form-label">Date de fin</label>
+            <input type="date" id="date_fin" name="date_fin" class="form-control" value="{{ selected_date_fin|date:'Y-m-d' }}" onchange="applyFilters()">
+        </div>
+        <div class="col-md-3">
+            <label for="groupe" class="form-label">Groupe</label>
+            <select id="groupe" name="groupe" class="form-select" onchange="applyFilters()">
+                <option value="">Tous</option>
+                {% for groupe in groupes %}
+                    <option value="{{ groupe.id }}" {% if selected_groupe == groupe.id %}selected{% endif %}>{{ groupe.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 mt-3">
+            <label for="type_test" class="form-label">Type de test</label>
+            <select id="type_test" name="type_test" class="form-select" onchange="applyFilters()">
+                <option value="">Tous</option>
+                {% for type in type_tests %}
+                    <option value="{{ type }}" {% if selected_type_test == type %}selected{% endif %}>{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Tableau des plannings -->
+    <div id="planningTable">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Test</th>
+                    <th>Module</th>
+                    <th>Date de début</th>
+                    <th>Date de fin</th>
+                    <th>Groupe(s)</th>
+                    <th>Type de test</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for planning in plannings %}
+                    <tr>
+                        <td>{{ planning.test.titre|default:'Test sans titre' }}</td>
+                        <td>{{ planning.test.module.intitule|default:'Non spécifié' }}</td>
+                        <td>{{ planning.date_debut|date:'d/m/Y H:i' }}</td>
+                        <td>{{ planning.date_fin|date:'d/m/Y H:i' }}</td>
+                        <td>{{ planning.groupes.all|join:', ' }}</td>
+                        <td>{{ planning.test.type_test|default:'Non spécifié' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not plannings %}
+        <p class="text-muted">Aucun planning disponible.</p>
+    {% endif %}
+</div>
+
+<script>
+    function applyFilters() {
+        const module = document.getElementById('module').value;
+        const dateDebut = document.getElementById('date_debut').value;
+        const dateFin = document.getElementById('date_fin').value;
+        const groupe = document.getElementById('groupe').value;
+        const typeTest = document.getElementById('type_test').value;
+
+        const url = new URL(window.location.href);
+        if (module) url.searchParams.set('module', module);
+        if (dateDebut) url.searchParams.set('date_debut', dateDebut);
+        if (dateFin) url.searchParams.set('date_fin', dateFin);
+        if (groupe) url.searchParams.set('groupe', groupe);
+        if (typeTest) url.searchParams.set('type_test', typeTest);
+
+        window.location.href = url.toString();
+    }
+
+    // Rafraîchissement automatique toutes les 30 secondes
+    function refreshPlannings() {
+        fetch(window.location.href + '&refresh=true')
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newTable = doc.querySelector('#planningTable').innerHTML;
+                document.getElementById('planningTable').innerHTML = newTable;
+            })
+            .catch(error => console.error('Erreur lors du rafraîchissement:', error));
+    }
+
+    setInterval(refreshPlannings, 30000); // Rafraîchit toutes les 30 secondes
+</script>
+{% endblock %}

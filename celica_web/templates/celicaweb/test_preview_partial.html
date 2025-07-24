@@ -1,0 +1,52 @@
+<div class="test-preview">
+    <div class="mb-4">
+        <h3>{{ test.titre }}</h3>
+        {% if test.description %}
+            <p class="text-muted">{{ test.description }}</p>
+        {% endif %}
+        <div class="row">
+            <div class="col-md-4">
+                <strong>{% trans "Module" %}:</strong> {{ test.module.intitule }}
+            </div>
+            <div class="col-md-4">
+                <strong>{% trans "Durée" %}:</strong> {{ test.duree }} min
+            </div>
+            <div class="col-md-4">
+                <strong>{% trans "Barème" %}:</strong> {{ test.bareme }} pts
+            </div>
+        </div>
+    </div>
+    
+    {% if questions %}
+        <div class="questions-preview">
+            {% for question in questions %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{% trans "Question" %} {{ forloop.counter }}</h5>
+                        <p class="question-text">{{ question.enonce }}</p>
+                        
+                        {% if question.image %}
+                            <img src="{{ question.image.url }}" alt="Question image" class="img-fluid mb-3" style="max-height: 200px;">
+                        {% endif %}
+                        
+                        <div class="reponses">
+                            {% for reponse in question.reponse_set.all %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="{% if question.type_question == 'QCM' %}checkbox{% else %}radio{% endif %}" disabled>
+                                    <label class="form-check-label {% if reponse.est_correcte %}text-success fw-bold{% endif %}">
+                                        {{ reponse.texte }}
+                                        {% if reponse.est_correcte %}<i class="fas fa-check text-success ms-1"></i>{% endif %}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            {% trans "Aucune question n'a encore été ajoutée à ce test." %}
+        </div>
+    {% endif %}
+</div>

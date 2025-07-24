@@ -1,0 +1,569 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Tableau de bord Apprenant - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-11">
+            <div class="card p-4 border rounded shadow-sm bg-light">
+                <h4 class="card-title">
+                    <i class="fas fa-user-graduate me-2"></i>
+                    Bienvenue, {{ user.first_name|default:user.email }}!
+                </h4>
+                <p class="card-text">
+                    <span class="badge bg-info">{{ user.get_role_display|default:"Apprenant" }}</span>
+                </p>
+
+                <!-- Messages d'erreur/succès -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Aperçu rapide -->
+                <div class="mt-3">
+                    <h5 class="card-title">
+                        <i class="fas fa-chart-pie me-2"></i>Mon aperçu personnel :
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-primary text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-book me-2"></i>Mes Cours
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_cours|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.total_cours > 0 %}
+                                        <small class="opacity-75">disponible{{ stats.total_cours|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun cours</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-success text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-clipboard-list me-2"></i>Tests Disponibles
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.tests_disponibles|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.tests_disponibles > 0 %}
+                                        <small class="opacity-75">à passer</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun test</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-info text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-chart-line me-2"></i>Tests Passés
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.tests_passes|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.tests_passes > 0 %}
+                                        <small class="opacity-75">terminé{{ stats.tests_passes|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun test passé</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-warning text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-star me-2"></i>Moyenne Générale
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.moyenne_generale|default:0|floatformat:1 }}%</strong>
+                                    </p>
+                                    {% if stats.moyenne_generale >= 80 %}
+                                        <small class="opacity-75">excellent</small>
+                                    {% elif stats.moyenne_generale >= 60 %}
+                                        <small class="opacity-75">bien</small>
+                                    {% elif stats.moyenne_generale > 0 %}
+                                        <small class="opacity-75">à améliorer</small>
+                                    {% else %}
+                                        <small class="opacity-75">pas de note</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-secondary text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-calendar-alt me-2"></i>Planning Semaine
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.plannings_semaine|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.plannings_semaine > 0 %}
+                                        <small class="opacity-75">événement{{ stats.plannings_semaine|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun planning</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-dark text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-bell me-2"></i>Notifications
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.notifications_non_lues|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.notifications_non_lues > 0 %}
+                                        <small class="opacity-75">non lue{{ stats.notifications_non_lues|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucune nouvelle</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activité récente -->
+                {% if tests_disponibles or resultats_recents %}
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clock me-2"></i>Activité récente
+                                </h5>
+                                <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#recentActivityDetails" aria-expanded="false" aria-controls="recentActivityDetails">
+                                    <i class="fas fa-eye me-1"></i>Voir détails
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="collapse" id="recentActivityDetails">
+                                <div class="row">
+                        <!-- Tests récents disponibles -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-clipboard-list me-2"></i>Tests à passer
+                                        <span class="badge bg-light text-dark ms-2">{{ tests_disponibles|length|default:0 }}</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if tests_disponibles and tests_disponibles|length > 0 %}
+                                        {% for test in tests_disponibles|slice:":5" %}
+                                            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                                <div>
+                                                    <strong>{{ test.titre|truncatechars:30|default:"Test sans titre" }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {% if test.duree_minutes %}
+                                                            Durée: {{ test.duree_minutes }} min
+                                                        {% else %}
+                                                            Durée non spécifiée
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <a href="{% url 'celica_web:passer_test' test.id %}" 
+                                                       class="btn btn-sm btn-success">
+                                                        <i class="fas fa-play"></i> Commencer
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                        {% if tests_disponibles|length > 5 %}
+                                            <div class="text-center mt-2">
+                                                <small class="text-muted">... et {{ tests_disponibles|length|add:"-5" }} autre{{ tests_disponibles|length|add:"-5"|pluralize }}</small>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted mb-0">Aucun test disponible pour le moment</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Résultats récents -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-chart-line me-2"></i>Mes derniers résultats
+                                        <span class="badge bg-light text-dark ms-2">{{ resultats_recents|length|default:0 }}</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if resultats_recents and resultats_recents|length > 0 %}
+                                        {% for resultat in resultats_recents|slice:":5" %}
+                                            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                                <div>
+                                                    <strong>{{ resultat.test.titre|truncatechars:25|default:"Test sans titre" }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {{ resultat.date_passation|date:"d M Y" }}
+                                                    </small>
+                                                </div>
+                                                <div class="text-end">
+                                                    {% if resultat.score >= 80 %}
+                                                        <span class="badge bg-success">{{ resultat.score|floatformat:1 }}%</span>
+                                                    {% elif resultat.score >= 60 %}
+                                                        <span class="badge bg-warning">{{ resultat.score|floatformat:1 }}%</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">{{ resultat.score|floatformat:1 }}%</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                        {% if resultats_recents|length > 5 %}
+                                            <div class="text-center mt-2">
+                                                <small class="text-muted">... et {{ resultats_recents|length|add:"-5" }} autre{{ resultats_recents|length|add:"-5"|pluralize }}</small>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-chart-line fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted mb-0">Aucun résultat pour le moment</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Sections principales de navigation -->
+                <div class="mt-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-compass me-2"></i>Mes sections :
+                    </h5>
+                    
+                    <!-- Mes Tests -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-clipboard-check me-2"></i>Mes Tests
+                                    <span class="badge bg-light text-dark ms-2">{{ tests_disponibles|length|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if tests_disponibles and tests_disponibles|length > 0 %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-play-circle fa-lg text-success me-2"></i>
+                                        <span class="fw-bold text-success">{{ tests_disponibles|length }} test{{ tests_disponibles|length|pluralize }} disponible{{ tests_disponibles|length|pluralize }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-clipboard-list fa-lg text-muted me-2"></i>
+                                        <span class="text-muted">Aucun test disponible pour le moment.</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer bg-light text-end">
+                                <a href="{% url 'celica_web:apprenant_tests' %}" class="btn btn-success btn-md">
+                                    <i class="fas fa-list me-1"></i>Voir mes tests
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mes Résultats -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>Mes Résultats
+                                    <span class="badge bg-dark text-light ms-2">{{ stats.tests_passes|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.tests_passes > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p class="text-success mb-1">
+                                                <i class="fas fa-graduation-cap me-2"></i>
+                                                {{ stats.tests_passes }} test{{ stats.tests_passes|pluralize }} passé{{ stats.tests_passes|pluralize }}
+                                            </p>
+                                            <small class="text-muted">Moyenne générale: {{ stats.moyenne_generale|default:0|floatformat:1 }}%</small>
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'celica_web:mes_resultats' %}" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-eye me-1"></i>Voir mes résultats
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucun résultat pour le moment.</p>
+                                        <p class="text-muted mb-0 small">Vos résultats apparaîtront ici après avoir passé vos premiers tests.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mon Planning -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-calendar-alt me-2"></i>Mon Planning
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.plannings_semaine|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.plannings_semaine > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="text-success mb-0">
+                                            <i class="fas fa-calendar-check me-2"></i>
+                                            {{ stats.plannings_semaine }} événement{{ stats.plannings_semaine|pluralize }} cette semaine
+                                        </p>
+                                        <div>
+                                            <a href="{% url 'celica_web:apprenant_plannings' %}" class="btn btn-secondary btn-sm">
+                                                <i class="fas fa-calendar me-1"></i>Voir mon planning
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-calendar fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucun événement planifié cette semaine.</p>
+                                        <a href="{% url 'celica_web:apprenant_plannings' %}" class="btn btn-secondary btn-sm">
+                                            <i class="fas fa-calendar me-2"></i>Consulter le planning complet
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mes Cours -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-book-open me-2"></i>Mes Cours
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_cours|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.total_cours > 0 %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-book fa-lg text-primary me-2"></i>
+                                        <span class="fw-bold text-primary">{{ stats.total_cours }} cours disponible{{ stats.total_cours|pluralize }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-book fa-lg text-muted me-2"></i>
+                                        <span class="text-muted">Aucun cours assigné pour le moment.</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer bg-light text-end">
+                                <a href="{% url 'celica_web:mes_cours' %}" class="btn btn-primary btn-md">
+                                    <i class="fas fa-list me-1"></i>Voir mes cours
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions rapides -->
+                <div class="mt-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-bolt me-2"></i>Actions rapides :
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4 col-sm-6 mb-2">
+                            <a href="{% url 'celica_web:apprenant_tests' %}" class="btn btn-outline-success btn-block w-100">
+                                <i class="fas fa-clipboard-list me-2"></i>Passer un test
+                            </a>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-2">
+                            <a href="{% url 'celica_web:mes_resultats' %}" class="btn btn-outline-warning btn-block w-100">
+                                <i class="fas fa-chart-line me-2"></i>Voir résultats
+                            </a>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-2">
+                            <a href="{% url 'celica_web:apprenant_plannings' %}" class="btn btn-outline-secondary btn-block w-100">
+                                <i class="fas fa-calendar me-2"></i>Mon planning
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications importantes -->
+                <div class="mb-3">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bell me-2"></i>Notifications importantes
+                                <span class="badge bg-light text-dark ms-2">{{ notifications_non_lues|length|default:0 }}</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if notifications_non_lues and notifications_non_lues|length > 0 %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-bell fa-lg text-info me-2"></i>
+                                    <span class="fw-bold text-info">{{ notifications_non_lues|length }} notification{{ notifications_non_lues|length|pluralize }} non lue{{ notifications_non_lues|length|pluralize }}</span>
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" class="btn btn-info btn-sm text-white" data-bs-toggle="modal" data-bs-target="#notificationsModal">
+                                        <i class="fas fa-eye me-1"></i>Voir les notifications
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-bell fa-lg text-muted me-2"></i>
+                                    <span class="text-muted">Aucune notification importante.</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour afficher les notifications -->
+{% if notifications_non_lues and notifications_non_lues|length > 0 %}
+<div class="modal fade" id="notificationsModal" tabindex="-1" aria-labelledby="notificationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="notificationsModalLabel">
+                    <i class="fas fa-bell me-2"></i>Notifications importantes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    {% for notification in notifications_non_lues %}
+                    <div class="col-12 mb-3">
+                        <div class="card {% if not notification.lue %}border-warning{% else %}border-light{% endif %} shadow-sm">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <!-- Icône de type -->
+                                    <div class="col-auto">
+                                        <div class="notification-icon text-center">
+                                            {% if notification.type_notice == 'urgence' %}
+                                                <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
+                                            {% elif notification.type_notice == 'alerte' %}
+                                                <i class="fas fa-exclamation-circle fa-2x text-warning"></i>
+                                            {% elif notification.type_notice == 'rappel' %}
+                                                <i class="fas fa-clock fa-2x text-info"></i>
+                                            {% else %}
+                                                <i class="fas fa-info-circle fa-2x text-primary"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Contenu de la notification -->
+                                    <div class="col">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="card-title mb-1">
+                                                    {{ notification.titre|default:"Notification" }}
+                                                    {% if not notification.lue %}
+                                                        <span class="badge bg-warning ms-2">Nouveau</span>
+                                                    {% endif %}
+                                                    <span class="badge 
+                                                        {% if notification.type_notice == 'urgence' %}bg-danger
+                                                        {% elif notification.type_notice == 'alerte' %}bg-warning
+                                                        {% elif notification.type_notice == 'rappel' %}bg-info
+                                                        {% else %}bg-primary{% endif %} ms-2">
+                                                        {{ notification.get_type_notice_display|default:"Info" }}
+                                                    </span>
+                                                </h6>
+                                                <p class="card-text mb-2">{{ notification.message }}</p>
+                                                <div class="text-muted small">
+                                                    <i class="fas fa-user me-1"></i>{{ notification.utilisateur.get_full_name }}
+                                                    <i class="fas fa-calendar ms-3 me-1"></i>{{ notification.date_envoi|date:"d/m/Y à H:i" }}
+                                                    {% if notification.lue %}
+                                                        <i class="fas fa-check-circle ms-3 me-1 text-success"></i>Lu
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Actions -->
+                                            <div class="text-end">
+                                                {% if not notification.lue and notification.utilisateur == request.user %}
+                                                <a href="{% url 'celica_web:marquer_lue' notification.id %}" 
+                                                   class="btn btn-outline-success btn-sm mb-2" 
+                                                   title="Marquer comme lu">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <a href="{% url 'celica_web:notification_list' %}" class="btn btn-info text-white">
+                    <i class="fas fa-list me-1"></i>Voir toutes les notifications
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.notification-icon {
+    width: 60px;
+}
+
+.card.border-warning {
+    border-left-width: 4px !important;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+@media (max-width: 768px) {
+    .notification-icon {
+        width: 40px;
+    }
+    
+    .notification-icon i {
+        font-size: 1.5rem !important;
+    }
+}
+</style>{% endblock %}

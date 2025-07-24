@@ -1,0 +1,272 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Gérer les Membres - {{ groupe.nom }} - CELICAWeb{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="h3 mb-1">
+                        <i class="fas fa-users-cog text-primary me-2"></i>
+                        Gérer les Membres
+                    </h2>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-layer-group me-1"></i>
+                        Groupe : <strong>{{ groupe.nom }}</strong>
+                        <span class="badge bg-secondary ms-2">{{ groupe.code|default:"--" }}</span>
+                    </p>
+                </div>
+                <a href="{% url 'celica_web:groupe_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <!-- Section Apprenants -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-gradient-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-graduation-cap me-2"></i>
+                                Apprenants du Groupe
+                                <span class="badge bg-white text-info ms-2">{{ groupe.get_apprenants.count }}</span>
+                            </h5>
+                        </div>
+                        
+                        <div class="card-body">
+                            <!-- Liste des apprenants actuels -->
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-3">Membres actuels</h6>
+                                {% if groupe.get_apprenants %}
+                                    <div class="list-group list-group-flush">
+                                        {% for apprenant in groupe.get_apprenants %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar bg-info text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    {{ apprenant.first_name|first|default:apprenant.email|first|upper }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-medium">{{ apprenant.first_name }} {{ apprenant.last_name }}</div>
+                                                    <small class="text-muted">{{ apprenant.email }}</small>
+                                                </div>
+                                            </div>
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="supprimer_apprenant">
+                                                <input type="hidden" name="apprenant_id" value="{{ apprenant.id }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                        onclick="return confirm('Retirer {{ apprenant.first_name }} {{ apprenant.last_name }} du groupe ?');"
+                                                        title="Retirer du groupe">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-user-graduate text-muted mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
+                                        <p class="text-muted mb-0">Aucun apprenant dans ce groupe</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Ajouter un apprenant -->
+                            <div class="border-top pt-3">
+                                <h6 class="text-muted mb-3">Ajouter un apprenant</h6>
+                                {% if apprenants_disponibles %}
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="ajouter_apprenant">
+                                        <div class="input-group">
+                                            <select name="apprenant_id" class="form-select" required>
+                                                <option value="">Sélectionner un apprenant...</option>
+                                                {% for apprenant in apprenants_disponibles %}
+                                                    <option value="{{ apprenant.id }}">{{ apprenant.first_name }} {{ apprenant.last_name }} - {{ apprenant.email }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="submit" class="btn btn-info">
+                                                <i class="fas fa-plus"></i> Ajouter
+                                            </button>
+                                        </div>
+                                    </form>
+                                {% else %}
+                                    <p class="text-muted mb-0">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Tous les apprenants sont déjà assignés à des groupes
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Instructeurs -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-gradient-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>
+                                Instructeurs du Groupe
+                                <span class="badge bg-white text-success ms-2">{{ groupe.instructeurs.count }}</span>
+                            </h5>
+                        </div>
+                        
+                        <div class="card-body">
+                            <!-- Liste des instructeurs actuels -->
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-3">Instructeurs assignés</h6>
+                                {% if groupe.instructeurs.all %}
+                                    <div class="list-group list-group-flush">
+                                        {% for instructeur in groupe.instructeurs.all %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar bg-success text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    {{ instructeur.first_name|first|default:instructeur.email|first|upper }}
+                                                </div>
+                                                <div>
+                                                    <div class="fw-medium">{{ instructeur.first_name }} {{ instructeur.last_name }}</div>
+                                                    <small class="text-muted">{{ instructeur.email }}</small>
+                                                </div>
+                                            </div>
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="supprimer_instructeur">
+                                                <input type="hidden" name="instructeur_id" value="{{ instructeur.id }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                        onclick="return confirm('Retirer {{ instructeur.first_name }} {{ instructeur.last_name }} du groupe ?');"
+                                                        title="Retirer du groupe">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-chalkboard-teacher text-muted mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
+                                        <p class="text-muted mb-0">Aucun instructeur assigné à ce groupe</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Ajouter un instructeur -->
+                            <div class="border-top pt-3">
+                                <h6 class="text-muted mb-3">Ajouter un instructeur</h6>
+                                {% if instructeurs_disponibles %}
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="ajouter_instructeur">
+                                        <div class="input-group">
+                                            <select name="instructeur_id" class="form-select" required>
+                                                <option value="">Sélectionner un instructeur...</option>
+                                                {% for instructeur in instructeurs_disponibles %}
+                                                    <option value="{{ instructeur.id }}">{{ instructeur.first_name }} {{ instructeur.last_name }} - {{ instructeur.email }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-plus"></i> Ajouter
+                                            </button>
+                                        </div>
+                                    </form>
+                                {% else %}
+                                    <p class="text-muted mb-0">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Tous les instructeurs sont déjà assignés
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques du groupe -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">Statistiques du Groupe</h6>
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-users text-primary me-2 fs-4"></i>
+                                        <div>
+                                            <div class="fs-4 fw-bold text-primary">{{ groupe.get_apprenants.count }}</div>
+                                            <small class="text-muted">Apprenant{{ groupe.get_apprenants.count|pluralize }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-chalkboard-teacher text-success me-2 fs-4"></i>
+                                        <div>
+                                            <div class="fs-4 fw-bold text-success">{{ groupe.instructeurs.count }}</div>
+                                            <small class="text-muted">Instructeur{{ groupe.instructeurs.count|pluralize }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-chart-pie text-info me-2 fs-4"></i>
+                                        <div>
+                                            <div class="fs-4 fw-bold text-info">{{ groupe.capacite_max }}</div>
+                                            <small class="text-muted">Capacité max</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-percentage text-warning me-2 fs-4"></i>
+                                        <div>
+                                            <div class="fs-4 fw-bold text-warning">
+                                                {% widthratio groupe.get_apprenants.count groupe.capacite_max 100 %}%
+                                            </div>
+                                            <small class="text-muted">Taux d'occupation</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+.bg-gradient-info {
+    background: linear-gradient(45deg, #17a2b8, #138496);
+}
+.bg-gradient-success {
+    background: linear-gradient(45deg, #28a745, #20c997);
+}
+.avatar {
+    font-size: 1rem;
+    font-weight: bold;
+}
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #eee;
+}
+.list-group-item:last-child {
+    border-bottom: none;
+}
+</style>
+{% endblock %}{% endblock %}

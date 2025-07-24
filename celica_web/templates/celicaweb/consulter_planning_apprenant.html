@@ -1,0 +1,131 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Consulter mon Planning - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Mon Planning</h2>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label for="date_debut" class="form-label">Date de début</label>
+            <input type="date" id="date_debut" name="date_debut" class="form-control" value="{{ selected_date_debut|date:'Y-m-d' }}" onchange="applyFilters()">
+        </div>
+        <div class="col-md-4">
+            <label for="date_fin" class="form-label">Date de fin</label>
+            <input type="date" id="date_fin" name="date_fin" class="form-control" value="{{ selected_date_fin|date:'Y-m-d' }}" onchange="applyFilters()">
+        </div>
+        <div class="col-md-4">
+            <label for="module" class="form-label">Module</label>
+            <select id="module" name="module" class="form-select" onchange="applyFilters()">
+                <option value="">Tous</option>
+                {% for module in modules %}
+                    <option value="{{ module.id }}" {% if selected_module == module.id %}selected{% endif %}>{{ module.intitule }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Tableau des plannings -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Module</th>
+                <th>Date de début</th>
+                <th>Date de fin</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for planning in plannings %}
+                {% now "Y-m-d H:i" as current_time %}
+                {% if planning.date_debut|date:'Y-m-d H:i' <= current_time and planning.date_fin|date:'Y-m-d H:i' >= current_time and planning.publie %}
+                    {% with test=planning.test %}
+                        {% if test.resultats.all %}
+                            {% for resultat in test.resultats.all %}
+                                {% if resultat.apprenant == user %}
+                                    <tr class="table-success">
+                                        <td>{{ test.titre|default:'Test sans titre' }}</td>
+                                        <td>{{ test.module.intitule|default:'Non spécifié' }}</td>
+                                        <td>{{ planning.date_debut|date:'d/m/Y H:i' }}</td>
+                                        <td>{{ planning.date_fin|date:'d/m/Y H:i' }}</td>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Test terminé
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td>{{ test.titre|default:'Test sans titre' }}</td>
+                                        <td>{{ test.module.intitule|default:'Non spécifié' }}</td>
+                                        <td>{{ planning.date_debut|date:'d/m/Y H:i' }}</td>
+                                        <td>{{ planning.date_fin|date:'d/m/Y H:i' }}</td>
+                                        <td>
+                                            <a href="{% url 'celica_web:passer_test' test_id=test.id %}" class="btn btn-success">
+                                                <i class="fas fa-play me-2"></i>Passer le test
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% empty %}
+                                <tr>
+                                    <td>{{ test.titre|default:'Test sans titre' }}</td>
+                                    <td>{{ test.module.intitule|default:'Non spécifié' }}</td>
+                                    <td>{{ planning.date_debut|date:'d/m/Y H:i' }}</td>
+                                    <td>{{ planning.date_fin|date:'d/m/Y H:i' }}</td>
+                                    <td>
+                                        <a href="{% url 'celica_web:passer_test' test_id=test.id %}" class="btn btn-success">
+                                            <i class="fas fa-play me-2"></i>Passer le test
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td>{{ test.titre|default:'Test sans titre' }}</td>
+                                <td>{{ test.module.intitule|default:'Non spécifié' }}</td>
+                                <td>{{ planning.date_debut|date:'d/m/Y H:i' }}</td>
+                                <td>{{ planning.date_fin|date:'d/m/Y H:i' }}</td>
+                                <td>
+                                    <a href="{% url 'celica_web:passer_test' test_id=test.id %}" class="btn btn-success">
+                                        <i class="fas fa-play me-2"></i>Passer le test
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endif %}                    {% endwith %}
+                {% else %}
+                    <tr>
+                        <td>{{ planning.test.titre|default:'Test sans titre' }}</td>
+                        <td>{{ planning.test.module.intitule|default:'Non spécifié' }}</td>
+                        <td>{{ planning.date_debut|date:'d/m/Y H:i' }}</td>
+                        <td>{{ planning.date_fin|date:'d/m/Y H:i' }}</td>
+                        <td>Non disponible</td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if not plannings %}
+        <p class="text-muted">Aucun planning disponible.</p>
+    {% endif %}
+</div>
+
+<script>
+    function applyFilters() {
+        const dateDebut = document.getElementById('date_debut').value;
+        const dateFin = document.getElementById('date_fin').value;
+        const module = document.getElementById('module').value;
+
+        const url = new URL(window.location.href);
+        if (dateDebut) url.searchParams.set('date_debut', dateDebut);
+        if (dateFin) url.searchParams.set('date_fin', dateFin);
+        if (module) url.searchParams.set('module', module);
+
+        window.location.href = url.toString();
+    }
+</script>
+{% endblock %}

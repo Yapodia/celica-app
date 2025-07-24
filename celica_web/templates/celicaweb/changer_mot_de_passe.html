@@ -1,0 +1,62 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Changer mot de passe - CelicaWeb{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <h2 class="text-center mb-4">Changer le mot de passe de {{ user.email }}</h2>
+                <!-- Affichage des messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <!-- Formulaire de changement de mot de passe -->
+                <form method="post" class="p-4 border rounded shadow-sm bg-light">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.nouveau_mot_de_passe.id_for_label }}" class="form-label">{{ form.nouveau_mot_de_passe.label }}</label>
+                        <input type="password" name="{{ form.nouveau_mot_de_passe.name }}" id="{{ form.nouveau_mot_de_passe.id_for_label }}"
+                               class="form-control {% if form.nouveau_mot_de_passe.errors %}is-invalid{% endif %}"
+                               required>
+                        {% if form.nouveau_mot_de_passe.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.nouveau_mot_de_passe.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.confirmer_mot_de_passe.id_for_label }}" class="form-label">{{ form.confirmer_mot_de_passe.label }}</label>
+                        <input type="password" name="{{ form.confirmer_mot_de_passe.name }}" id="{{ form.confirmer_mot_de_passe.id_for_label }}"
+                               class="form-control {% if form.confirmer_mot_de_passe.errors %}is-invalid{% endif %}"
+                               required>
+                        {% if form.confirmer_mot_de_passe.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.confirmer_mot_de_passe.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.non_field_errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

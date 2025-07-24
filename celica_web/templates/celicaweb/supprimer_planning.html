@@ -1,0 +1,13 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Supprimer Planning{% endblock %}
+
+{% block content %}
+<h2>Supprimer Planning</h2>
+<p>Êtes-vous sûr de vouloir supprimer ce planning ({{ planning.date_debut }} - {{ planning.date_fin }}) ?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirmer</button>
+    <a href="{% url 'celica_web:planning_list' %}">Annuler</a>
+</form>
+{% endblock %}

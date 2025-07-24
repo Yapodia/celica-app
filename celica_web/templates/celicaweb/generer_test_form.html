@@ -1,0 +1,16 @@
+{% extends 'celicaweb/base.html' %}{% block content %}
+<h2>Générer un test automatiquement</h2>
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Générer le test</button>
+</form>
+<a href="{% url 'celica_web:test_list' %}" class="btn btn-secondary">Retour à la liste des tests</a>
+{% endblock %}

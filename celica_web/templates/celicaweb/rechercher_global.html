@@ -1,0 +1,22 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Recherche Globale{% endblock %}
+
+{% block content %}
+<h2>Recherche Globale</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Rechercher</button>
+</form>
+{% if resultats is not None %}
+    <h3>Résultats pour "{{ entite }}"</h3>
+    <ul>
+    {% for resultat in resultats %}
+        <li>{{ resultat }}</li>
+    {% empty %}
+        <li>Aucun résultat trouvé.</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}

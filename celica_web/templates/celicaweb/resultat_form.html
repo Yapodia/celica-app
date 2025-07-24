@@ -1,0 +1,32 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block content %}
+  <div class="container mt-5">
+    <h2>Entrer/Modifier un Résultat</h2>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_utilisateur">Utilisateur :</label>
+        <select name="utilisateur" id="id_utilisateur" class="form-control" required>
+          {% for user in utilisateurs %}
+            <option value="{{ user.id }}">{{ user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="id_cours">Cours :</label>
+        <select name="cours" id="id_cours" class="form-control" required>
+          {% for cours in cours_list %}
+            <option value="{{ cours.id }}">{{ cours.titre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="id_note">Note :</label>
+        <input type="number" name="note" id="id_note" class="form-control" step="0.1" min="0" max="20" required>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
+      <a href="{% url 'mes_resultats' %}" class="btn btn-secondary mt-3">Annuler</a>
+    </form>
+  </div>
+{% endblock %}

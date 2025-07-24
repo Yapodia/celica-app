@@ -1,0 +1,166 @@
+{% extends 'celicaweb/base.html' %}
+{% block title %}{% if form.instance.pk %}Modifier{% else %}Créer{% endif %} un Groupe{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        {% if form.instance.pk %}Modifier{% else %}Créer{% endif %} un Groupe
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <!-- Messages d'information -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Formulaire -->
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Nom du groupe -->
+                        <div class="mb-3">
+                            <label for="{{ form.nom.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag me-1"></i>{{ form.nom.label }}*
+                            </label>
+                            {{ form.nom }}
+                            {% if form.nom.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.nom.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Le nom du groupe doit être unique et contenir au moins 3 caractères.</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>{{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Description facultative du groupe et de ses objectifs.</div>
+                        </div>
+
+                        <!-- Capacité maximale -->
+                        <div class="mb-3">
+                            <label for="{{ form.capacite_max.id_for_label }}" class="form-label">
+                                <i class="fas fa-user-friends me-1"></i>{{ form.capacite_max.label }}*
+                            </label>
+                            {{ form.capacite_max }}
+                            {% if form.capacite_max.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.capacite_max.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Nombre maximum d'apprenants que peut contenir ce groupe.</div>
+                        </div>
+
+                        <!-- Apprenants -->
+                        <div class="mb-4">
+                            <label for="{{ form.apprenants.id_for_label }}" class="form-label">
+                                <i class="fas fa-graduation-cap me-1"></i>{{ form.apprenants.label }}
+                            </label>
+                            {{ form.apprenants }}
+                            {% if form.apprenants.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.apprenants.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Maintenez la touche <kbd>Ctrl</kbd> (ou <kbd>Cmd</kbd> sur Mac) pour sélectionner plusieurs apprenants.
+                                Vous pouvez également ajouter des apprenants après la création du groupe.
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'celica_web:groupe_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                {% if form.instance.pk %}Mettre à jour{% else %}Créer{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Information sur le groupe existant -->
+            {% if form.instance.pk %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations du groupe</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Code :</strong> {{ form.instance.code|default:"En cours de génération" }}</p>
+                                <p><strong>Date de création :</strong> {{ form.instance.date_creation|date:"d/m/Y H:i" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Apprenants actuels :</strong> {{ form.instance.nombre_apprenants }}</p>
+                                <p><strong>Places disponibles :</strong> {{ form.instance.places_disponibles }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    
+    // Validation Bootstrap
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+    
+    // Améliorer l'expérience utilisateur pour la sélection multiple
+    const apprenantsSelect = document.querySelector('#{{ form.apprenants.id_for_label }}');
+    if (apprenantsSelect) {
+        apprenantsSelect.addEventListener('change', function() {
+            const selected = Array.from(this.selectedOptions);
+            const capaciteMax = document.querySelector('#{{ form.capacite_max.id_for_label }}');
+            
+            if (selected.length > 0 && capaciteMax && parseInt(capaciteMax.value) > 0) {
+                if (selected.length > parseInt(capaciteMax.value)) {
+                    alert(`Attention : Vous avez sélectionné ${selected.length} apprenants mais la capacité maximale est de ${capaciteMax.value}.`);
+                }
+            }
+        });
+    }
+})();
+</script>{% endblock %}

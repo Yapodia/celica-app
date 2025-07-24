@@ -1,0 +1,262 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Ajouter des questions au test "{{ test.titre }}" - CELICAWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Ajouter des questions au test "{{ test.titre }}"</h2>
+
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Onglets pour les différentes méthodes -->
+    <ul class="nav nav-tabs mb-3" id="methodTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" role="tab" aria-controls="manual" aria-selected="true">Saisie manuelle</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import" type="button" role="tab" aria-controls="import" aria-selected="false">Importation</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="select-tab" data-bs-toggle="tab" data-bs-target="#select" type="button" role="tab" aria-controls="select" aria-selected="false">Sélection existante</button>
+        </li>
+    </ul>
+
+    <!-- Contenu des onglets -->
+    <div class="tab-content" id="methodTabsContent">
+        <!-- Onglet Saisie manuelle -->
+        <div class="tab-pane fade show active" id="manual" role="tabpanel" aria-labelledby="manual-tab">
+            <form method="post" class="needs-validation" novalidate id="manualForm">
+                {% csrf_token %}
+                {% if form_manual.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form_manual.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form_manual.enonce.id_for_label }}" class="form-label">Énoncé :</label>
+                    {{ form_manual.enonce }}
+                    {% if form_manual.enonce.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form_manual.enonce.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form_manual.niveau_difficulte.id_for_label }}" class="form-label">Niveau de difficulté :</label>
+                    {{ form_manual.niveau_difficulte }}
+                    {% if form_manual.niveau_difficulte.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form_manual.niveau_difficulte.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form_manual.type_question.id_for_label }}" class="form-label">Type de question :</label>
+                    {{ form_manual.type_question }}
+                    {% if form_manual.type_question.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form_manual.type_question.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Champs dynamiques pour les réponses -->
+                <div id="responsesManual" class="mb-3">
+                    <h4>Réponses</h4>
+                    <div class="response-row mb-2" data-index="0">
+                        <input type="text" name="responses-0-text" class="form-control mb-2" placeholder="Texte de la réponse" required>
+                        <select name="responses-0-correct" class="form-control mb-2">
+                            <option value="true">Correcte</option>
+                            <option value="false" selected>Incorrecte</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" id="addResponseManual" class="btn btn-secondary mb-3">Ajouter une réponse</button>
+
+                <div class="text-center">
+                    <button type="submit" name="method" value="manual" class="btn btn-primary">Ajouter la question</button>
+                    <a href="{% url 'celica_web:question_list' %}" class="btn btn-secondary ms-2">Annuler</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Onglet Importation -->
+        <div class="tab-pane fade" id="import" role="tabpanel" aria-labelledby="import-tab">
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate id="importForm">
+                {% csrf_token %}
+                {% if form_import.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form_import.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form_import.file.id_for_label }}" class="form-label">Fichier (CSV ou Excel) :</label>
+                    {{ form_import.file }}
+                    {% if form_import.file.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form_import.file.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Formats supportés : .csv, .xlsx. Inclure colonnes : Énoncé, Niveau, Type_Question, Réponse, Est_Correcte.</small>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" name="method" value="import" class="btn btn-primary">Importer</button>
+                    <a href="{% url 'celica_web:question_list' %}" class="btn btn-secondary ms-2">Annuler</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Onglet Sélection existante -->
+        <div class="tab-pane fade" id="select" role="tabpanel" aria-labelledby="select-tab">
+            <form method="post" class="needs-validation" novalidate id="selectForm">
+                {% csrf_token %}
+                {% if form_select.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form_select.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form_select.questions.id_for_label }}" class="form-label">Questions :</label>
+                    {{ form_select.questions }}
+                    {% if form_select.questions.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form_select.questions.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Sélectionnez les questions à ajouter. Une question ne peut être associée qu'à un seul test à la fois.</small>
+                </div>
+
+                <!-- Option pour ajouter des réponses supplémentaires si nécessaire -->
+                <div id="responsesSelect" class="mb-3" style="display: none;">
+                    <h4>Réponses supplémentaires (optionnel)</h4>
+                    <div class="response-row mb-2" data-index="0">
+                        <input type="text" name="responses_select-0-text" class="form-control mb-2" placeholder="Texte de la réponse">
+                        <select name="responses_select-0-correct" class="form-control mb-2">
+                            <option value="true">Correcte</option>
+                            <option value="false" selected>Incorrecte</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" id="addResponseSelect" class="btn btn-secondary mb-3">Ajouter une réponse</button>
+                <button type="button" id="toggleResponsesSelect" class="btn btn-link">Ajouter/modifier des réponses</button>
+
+                <div class="text-center">
+                    <button type="submit" name="method" value="select" class="btn btn-primary">Ajouter les questions</button>
+                    <a href="{% url 'celica_web:question_list' %}" class="btn btn-secondary ms-2">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript pour gérer les onglets et les champs dynamiques -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion des onglets
+        const tabButtons = document.querySelectorAll('.nav-link');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            });
+        });
+
+        // Gestion des formulaires avec validation
+        ['manualForm', 'importForm', 'selectForm'].forEach(formId => {
+            document.getElementById(formId).addEventListener('submit', (e) => {
+                const form = e.target;
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                form.classList.add('was-validated');
+
+                if (formId === 'selectForm') {
+                    const questionsSelect = document.querySelector('select[name="questions"]');
+                    if (!questionsSelect || !questionsSelect.selectedOptions.length) {
+                        e.preventDefault();
+                        alert('Veuillez sélectionner au moins une question.');
+                        return;
+                    }
+                }
+            });
+        });
+
+        // Ajout dynamique des réponses (Saisie manuelle)
+        let responseIndexManual = 1;
+        document.getElementById('addResponseManual').addEventListener('click', () => {
+            const responsesDiv = document.getElementById('responsesManual');
+            const newRow = document.createElement('div');
+            newRow.className = 'response-row mb-2';
+            newRow.dataset.index = responseIndexManual;
+            newRow.innerHTML = `
+                <input type="text" name="responses-${responseIndexManual}-text" class="form-control mb-2" placeholder="Texte de la réponse" required>
+                <select name="responses-${responseIndexManual}-correct" class="form-control mb-2">
+                    <option value="true">Correcte</option>
+                    <option value="false" selected>Incorrecte</option>
+                </select>
+            `;
+            responsesDiv.appendChild(newRow);
+            responseIndexManual++;
+        });
+
+        // Ajout dynamique des réponses (Sélection existante)
+        let responseIndexSelect = 1;
+        document.getElementById('addResponseSelect').addEventListener('click', () => {
+            const responsesDiv = document.getElementById('responsesSelect');
+            const newRow = document.createElement('div');
+            newRow.className = 'response-row mb-2';
+            newRow.dataset.index = responseIndexSelect;
+            newRow.innerHTML = `
+                <input type="text" name="responses_select-${responseIndexSelect}-text" class="form-control mb-2" placeholder="Texte de la réponse">
+                <select name="responses_select-${responseIndexSelect}-correct" class="form-control mb-2">
+                    <option value="true">Correcte</option>
+                    <option value="false" selected>Incorrecte</option>
+                </select>
+            `;
+            responsesDiv.appendChild(newRow);
+            responseIndexSelect++;
+        });
+
+        // Toggle pour afficher/masquer les réponses supplémentaires (Sélection)
+        document.getElementById('toggleResponsesSelect').addEventListener('click', () => {
+            const responsesDiv = document.getElementById('responsesSelect');
+            if (responsesDiv.style.display === 'none') {
+                responsesDiv.style.display = 'block';
+            } else {
+                responsesDiv.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

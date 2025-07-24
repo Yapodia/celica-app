@@ -1,0 +1,766 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Tableau de bord Instructeur - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-11">
+            <div class="card p-4 border rounded shadow-sm bg-light">
+                <h4 class="card-title">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                    Bienvenue, {{ user.first_name|default:user.email }}!
+                </h4>
+                <p class="card-text">
+                    <span class="badge bg-primary">{{ user.get_role_display|default:"Instructeur" }}</span>
+                </p>
+
+                <!-- Messages d'erreur/succès -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Aperçu rapide -->
+                <div class="mt-3">
+                    <h5 class="card-title">
+                        <i class="fas fa-chart-pie me-2"></i>Aperçu rapide :
+                        {% if selected_module %}
+                            <small class="text-muted">(Module sélectionné)</small>
+                        {% else %}
+                            <small class="text-muted">(Mes données uniquement)</small>
+                        {% endif %}
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-primary text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-book me-2"></i>Cours
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_cours|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.total_cours > 0 %}
+                                        <small class="opacity-75">disponible{{ stats.total_cours|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun cours</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-success text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-clipboard-list me-2"></i>Tests
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_tests|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.total_tests > 0 %}
+                                        <small class="opacity-75">actif{{ stats.total_tests|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun test</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-info text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-question-circle me-2"></i>Questions
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_questions|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.total_questions > 0 %}
+                                        <small class="opacity-75">en banque</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucune question</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-warning text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-chart-line me-2"></i>Résultats
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_resultats|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.total_resultats > 0 %}
+                                        <small class="opacity-75">enregistré{{ stats.total_resultats|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun résultat</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-secondary text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-calendar-alt me-2"></i>Plannings
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_plannings|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.total_plannings > 0 %}
+                                        <small class="opacity-75">programmé{{ stats.total_plannings|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun planning</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6 mb-3">
+                            <div class="card text-center bg-dark text-white h-100">
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-layer-group me-2"></i>Modules
+                                    </h6>
+                                    <p class="card-text fs-4 mb-1">
+                                        <strong>{{ stats.total_modules|default:0 }}</strong>
+                                    </p>
+                                    {% if stats.total_modules > 0 %}
+                                        <small class="opacity-75">configuré{{ stats.total_modules|pluralize }}</small>
+                                    {% else %}
+                                        <small class="opacity-75">aucun module</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicateur de données d'affichage vs totales -->
+                <div class="mt-3 mb-3">
+                    <div class="alert alert-light border">
+                        <h6><i class="fas fa-eye me-2"></i>Données affichées sur cette page :</h6>
+                        <div class="row text-center">
+                            <div class="col-md-2">
+                                <small class="text-muted">Cours affichés</small><br>
+                                <span class="badge bg-primary">{{ cours|length|default:0 }}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">Tests affichés</small><br>
+                                <span class="badge bg-success">{{ tests|length|default:0 }}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">Questions affichées</small><br>
+                                <span class="badge bg-info">{{ questions|length|default:0 }}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">Résultats affichés</small><br>
+                                <span class="badge bg-warning">{{ resultats|length|default:0 }}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">Plannings affichés</small><br>
+                                <span class="badge bg-secondary">{{ plannings|length|default:0 }}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">Modules affichés</small><br>
+                                <span class="badge bg-dark">{{ modules|length|default:0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques des Résultats (version compacte) -->
+                {% if stats.total_resultats > 0 %}
+                <div class="mt-4">
+                    <h6 class="card-title">
+                        <i class="fas fa-chart-bar me-2"></i>Statistiques des Résultats :
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <div class="card">
+                                <div class="card-body p-2">
+                                    <canvas id="scoreChart" height="120" style="max-height: 120px;"></canvas>
+                                    <p class="text-center mt-1 mb-0 small">
+                                        <strong>Scores moyens</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="card">
+                                <div class="card-body p-2">
+                                    <canvas id="resultCountChart" height="120" style="max-height: 120px;"></canvas>
+                                    <p class="text-center mt-1 mb-0 small">
+                                        <strong>Nombre de résultats</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="mt-4">
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                        <h6>Aucune statistique disponible</h6>
+                        <p class="mb-0">Les graphiques apparaîtront quand des résultats seront enregistrés.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Section des données récentes -->
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clock me-2"></i>Activité récente
+                                </h5>
+                                <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#recentActivityDetails" aria-expanded="false" aria-controls="recentActivityDetails">
+                                    <i class="fas fa-eye me-1"></i>Voir détails
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="collapse" id="recentActivityDetails">
+                                <div class="row">
+                        <!-- Tests récents -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-clipboard-list me-2"></i>Tests récents
+                                        <span class="badge bg-light text-dark ms-2">{{ tests|length|default:0 }}</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if tests and tests|length > 0 %}
+                                        {% for test in tests|slice:":5" %}
+                                            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                                <div>
+                                                    <strong>{{ test.titre|truncatechars:30|default:"Test sans titre" }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Module: {{ test.module.intitule|default:"Non spécifié" }}
+                                                    </small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <a href="{% url 'celica_web:test_edit' test.id %}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                        {% if tests|length > 5 %}
+                                            <div class="text-center mt-2">
+                                                <small class="text-muted">... et {{ tests|length|add:"-5" }} autre{{ tests|length|add:"-5"|pluralize }}</small>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-clipboard-list fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted mb-0">Aucun test disponible</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cours récents -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-book me-2"></i>Cours récents
+                                        <span class="badge bg-light text-dark ms-2">{{ cours|length|default:0 }}</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if cours and cours|length > 0 %}
+                                        {% for cours_item in cours|slice:":5" %}
+                                            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                                <div>
+                                                    <strong>{{ cours_item.titre|truncatechars:30|default:"Cours sans titre" }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {% if cours_item.duree_heures %}
+                                                            Durée: {{ cours_item.duree_heures }}h
+                                                        {% else %}
+                                                            Durée non spécifiée
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <a href="{% url 'celica_web:cours_form_edit' cours_item.id %}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                        {% if cours|length > 5 %}
+                                            <div class="text-center mt-2">
+                                                <small class="text-muted">... et {{ cours|length|add:"-5" }} autre{{ cours|length|add:"-5"|pluralize }}</small>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-book fa-2x text-muted mb-2"></i>
+                                            <p class="text-muted mb-0">Aucun cours disponible</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sections de gestion -->
+                <div class="mt-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-cogs me-2"></i>Gestion des contenus :
+                    </h5>
+                    
+                    <!-- Gestion des Cours -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-book-open me-2"></i>Cours
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_cours|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.total_cours > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="text-success mb-0">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            {{ stats.total_cours }} cours disponible{{ stats.total_cours|pluralize }} dans la base
+                                        </p>
+                                        <div>
+                                            <a href="{% url 'celica_web:cours_list' %}" class="btn btn-outline-primary btn-sm me-2">
+                                                <i class="fas fa-list me-1"></i>Voir tous
+                                            </a>
+                                            <a href="{% url 'celica_web:cours_form_new' %}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-plus me-1"></i>Nouveau
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucun cours dans la base de données.</p>
+                                        <a href="{% url 'celica_web:cours_form_new' %}" class="btn btn-success">
+                                            <i class="fas fa-plus me-2"></i>Créer le premier cours
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gestion des Tests -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-clipboard-check me-2"></i>Tests
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_tests|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.total_tests > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="text-success mb-0">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            {{ stats.total_tests }} test{{ stats.total_tests|pluralize }} dans la base
+                                        </p>
+                                        <div>
+                                            <a href="{% url 'celica_web:test_list' %}" class="btn btn-outline-success btn-sm me-2">
+                                                <i class="fas fa-list me-1"></i>Voir tous
+                                            </a>
+                                            <a href="{% url 'celica_web:test_add' %}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-plus me-1"></i>Nouveau
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucun test dans la base de données.</p>
+                                        <a href="{% url 'celica_web:test_add' %}" class="btn btn-success">
+                                            <i class="fas fa-plus me-2"></i>Créer le premier test
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gestion des Questions -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-question-circle me-2"></i>Questions
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_questions|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.total_questions > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="text-success mb-0">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            {{ stats.total_questions }} question{{ stats.total_questions|pluralize }} en banque
+                                        </p>
+                                        <div>
+                                            <a href="{% url 'celica_web:question_list' %}" class="btn btn-outline-info btn-sm me-2">
+                                                <i class="fas fa-list me-1"></i>Voir toutes
+                                            </a>
+                                            <a href="{% url 'celica_web:question_form' %}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-plus me-1"></i>Nouvelle
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-question fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucune question dans la banque.</p>
+                                        <a href="{% url 'celica_web:question_form' %}" class="btn btn-success">
+                                            <i class="fas fa-plus me-2"></i>Créer la première question
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Résultats des Apprenants -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-chart-line me-2"></i>Résultats des Apprenants
+                                    <span class="badge bg-dark text-light ms-2">{{ stats.total_resultats|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.total_resultats > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p class="text-success mb-1">
+                                                <i class="fas fa-graduation-cap me-2"></i>
+                                                {{ stats.total_resultats }} résultat{{ stats.total_resultats|pluralize }} enregistré{{ stats.total_resultats|pluralize }}
+                                            </p>
+                                            <small class="text-muted">Consultez les performances de vos apprenants</small>
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'celica_web:resultats_apprenants' %}" class="btn btn-outline-warning btn-sm me-2">
+                                                <i class="fas fa-eye me-1"></i>Voir tous
+                                            </a>
+                                            <a href="{% url 'celica_web:resultats_apprenants' %}?export=excel" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-download me-1"></i>Export
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucun résultat d'apprenant disponible.</p>
+                                        <p class="text-muted mb-0 small">Les résultats apparaîtront quand les apprenants passeront vos tests.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gestion des Modules -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-dark text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-layer-group me-2"></i>Modules
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_modules|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.total_modules > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="text-success mb-0">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            {{ stats.total_modules }} module{{ stats.total_modules|pluralize }} configuré{{ stats.total_modules|pluralize }}
+                                        </p>
+                                        <div>
+                                            <a href="{% url 'celica_web:module_list' %}" class="btn btn-outline-dark btn-sm me-2">
+                                                <i class="fas fa-list me-1"></i>Voir tous
+                                            </a>
+                                            <a href="{% url 'celica_web:module_form_new' %}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-plus me-1"></i>Nouveau
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucun module configuré.</p>
+                                        <a href="{% url 'celica_web:module_form_new' %}" class="btn btn-success">
+                                            <i class="fas fa-plus me-2"></i>Créer le premier module
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gestion des Groupes -->
+                    <div class="mb-3">
+                        <div class="card">
+                            <div class="card-header bg-purple text-white" style="background-color: #6f42c1 !important;">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-users-cog me-2"></i>Groupes
+                                    <span class="badge bg-light text-dark ms-2">{{ stats.total_groupes|default:0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if stats.total_groupes > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="text-success mb-0">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            {{ stats.total_groupes }} groupe{{ stats.total_groupes|pluralize }} actif{{ stats.total_groupes|pluralize }}
+                                        </p>
+                                        <div>
+                                            <a href="{% url 'celica_web:groupe_list' %}" class="btn btn-outline-purple btn-sm me-2" style="border-color: #6f42c1; color: #6f42c1;">
+                                                <i class="fas fa-list me-1"></i>Voir tous
+                                            </a>
+                                            <a href="{% url 'celica_web:groupe_add' %}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-plus me-1"></i>Nouveau
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-users-cog fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted mb-3">Aucun groupe configuré.</p>
+                                        <a href="{% url 'celica_web:groupe_add' %}" class="btn btn-success">
+                                            <i class="fas fa-plus me-2"></i>Créer le premier groupe
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions rapides avec compteurs -->
+                <div class="mt-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-bolt me-2"></i>Actions rapides :
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-2 mb-2">
+                            <a href="{% url 'celica_web:cours_list' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-book me-2"></i>Cours
+                                <span class="badge bg-primary ms-1">{{ stats.total_cours|default:0 }}</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{% url 'celica_web:test_list' %}" class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-clipboard-check me-2"></i>Tests
+                                <span class="badge bg-success ms-1">{{ stats.total_tests|default:0 }}</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{% url 'celica_web:question_list' %}" class="btn btn-outline-info w-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-question-circle me-2"></i>Questions
+                                <span class="badge bg-info ms-1">{{ stats.total_questions|default:0 }}</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{% url 'celica_web:planning_list' %}" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-calendar-alt me-2"></i>Plannings
+                                <span class="badge bg-secondary ms-1">{{ stats.total_plannings|default:0 }}</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{% url 'celica_web:module_list' %}" class="btn btn-outline-dark w-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-cube me-2"></i>Modules
+                                <span class="badge bg-dark ms-1">{{ stats.total_modules|default:0 }}</span>
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{% url 'celica_web:groupe_list' %}" class="btn btn-outline-purple w-100 d-flex align-items-center justify-content-center" style="border-color: #6f42c1; color: #6f42c1;">
+                                <i class="fas fa-users me-2"></i>Groupes
+                                <span class="badge ms-1" style="background-color: #6f42c1;">{{ stats.total_groupes|default:0 }}</span>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Notifications -->
+                {% if notifications and notifications|length > 0 %}
+                <div class="mb-3">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bell me-2"></i>Notifications récentes
+                                <span class="badge bg-light text-dark ms-2">{{ notifications|length }}</span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <p class="text-danger mb-1">
+                                        <i class="fas fa-bell me-2"></i>
+                                        {{ notifications|length }} notification{{ notifications|length|pluralize }} non lue{{ notifications|length|pluralize }}
+                                    </p>
+                                </div>
+                                <div>
+                                    <a href="{% url 'celica_web:notification_list' %}" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-eye me-1"></i>Voir tous
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="mb-3">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-bell me-2"></i>Notifications récentes
+                                <span class="badge bg-light text-dark ms-2">0</span>
+                            </h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <i class="fas fa-bell fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-3">Aucune notification récente.</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts pour les graphiques -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== DEBUG DASHBOARD ===');
+    // Stats depuis le template
+    const statsData = {
+        cours: {% if stats.total_cours %}{{ stats.total_cours }}{% else %}0{% endif %},
+        tests: {% if stats.total_tests %}{{ stats.total_tests }}{% else %}0{% endif %},
+        questions: {% if stats.total_questions %}{{ stats.total_questions }}{% else %}0{% endif %},
+        resultats: {% if stats.total_resultats %}{{ stats.total_resultats }}{% else %}0{% endif %},
+        plannings: {% if stats.total_plannings %}{{ stats.total_plannings }}{% else %}0{% endif %},
+        modules: {% if stats.total_modules %}{{ stats.total_modules }}{% else %}0{% endif %}
+    };
+    console.log('Stats depuis le template:', statsData);
+    
+    {% if stats.total_resultats > 0 %}
+    try {
+        // Données sécurisées avec validation
+        const labels = {{ stats_labels|safe }};
+        const scores = {{ stats_data|safe }};
+        const counts = {{ stats_count|safe }};
+
+        console.log('Données graphiques:', { labels, scores, counts });
+
+        if (labels && labels.length > 0 && scores && counts) {
+            // Graphique des scores moyens
+            const scoreCtx = document.getElementById('scoreChart');
+            if (scoreCtx) {
+                new Chart(scoreCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Score moyen (/20)',
+                            data: scores,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 20,
+                                ticks: {
+                                    stepSize: 2
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '/20';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Graphique du nombre de résultats
+            const countCtx = document.getElementById('resultCountChart');
+            if (countCtx) {
+                new Chart(countCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Nombre de résultats',
+                            data: counts,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.6)',
+                                'rgba(54, 162, 235, 0.6)',
+                                'rgba(255, 205, 86, 0.6)',
+                                'rgba(75, 192, 192, 0.6)',
+                                'rgba(153, 102, 255, 0.6)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        } else {
+            console.warn('Données graphiques vides ou invalides');
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des graphiques:', error);
+    }
+    {% else %}
+    console.log('Aucun résultat pour afficher les graphiques');
+    {% endif %}
+});
+</script>
+{% endblock %}

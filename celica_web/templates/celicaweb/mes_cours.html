@@ -1,0 +1,21 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Mes Cours{% endblock %}
+
+{% block content %}
+<h2>Mes Cours</h2>
+<ul>
+{% for cours in cours %}
+    <li>
+        {{ cours.titre }} ({{ cours.module.intitule }}) - {{ cours.status }}
+        {% if cours.fichier %}
+            — <a href="{{ cours.fichier.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                <i class="fas fa-download me-1"></i>Télécharger
+            </a>
+        {% endif %}
+    </li>
+{% empty %}
+    <li>Aucun cours disponible.</li>
+{% endfor %}
+</ul>
+{% endblock %}

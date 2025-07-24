@@ -1,0 +1,199 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Diagnostic Plannings - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>🔍 Diagnostic des Plannings</h4>
+                    <p class="text-muted">Outil de diagnostic pour identifier les problèmes d'affichage des plannings</p>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Informations générales -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>📊 Informations générales</h5>
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Utilisateur connecté</span>
+                                    <span class="badge bg-primary">{{ diagnostic.user.email }} ({{ diagnostic.user.role }})</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Groupes de l'utilisateur</span>
+                                    <span class="badge bg-info">{{ diagnostic.user_groups.count }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Total plannings</span>
+                                    <span class="badge bg-success">{{ diagnostic.total_plannings }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Total groupes</span>
+                                    <span class="badge bg-warning">{{ diagnostic.total_groups }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Total apprenants</span>
+                                    <span class="badge bg-secondary">{{ diagnostic.total_apprenants }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        {% if diagnostic.user_groups.count > 0 %}
+                        <div class="col-md-6">
+                            <h5>👥 Vos groupes</h5>
+                            <ul class="list-group">
+                                {% for groupe in diagnostic.user_groups %}
+                                <li class="list-group-item">
+                                    <strong>{{ groupe.nom }}</strong>
+                                    <br><small class="text-muted">{{ groupe.groupes_apprenant.count }} apprenants</small>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Test des requêtes apprenants -->
+                    {% if diagnostic.plannings_old_count is not None %}
+                    <div class="alert alert-info">
+                        <h5>🧪 Test des requêtes apprenants</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Ancienne requête (groupes ManyToMany seulement)</strong>
+                                <p class="mb-1">Résultats trouvés: <span class="badge bg-warning">{{ diagnostic.plannings_old_count }}</span></p>
+                                {% for planning in diagnostic.plannings_old_list %}
+                                    <small>• {{ planning.titre }} ({{ planning.date_debut|date:"d/m/Y H:i" }})</small><br>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Nouvelle requête (groupe FK + groupes M2M + statuts)</strong>
+                                <p class="mb-1">Résultats trouvés: <span class="badge bg-success">{{ diagnostic.plannings_new_count }}</span></p>
+                                {% for planning in diagnostic.plannings_new_list %}
+                                    <small>• {{ planning.titre }} ({{ planning.date_debut|date:"d/m/Y H:i" }})</small><br>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Analyse des plannings -->
+                    <div class="mb-4">
+                        <h5>📋 Analyse des plannings (10 premiers)</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Planning</th>
+                                        <th>Statut</th>
+                                        <th>Groupe (FK)</th>
+                                        <th>Groupes (M2M)</th>
+                                        <th>Apprenants via FK</th>
+                                        <th>Apprenants via M2M</th>
+                                        <th>Total Apprenants</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for analysis in plannings_analysis %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ analysis.planning.titre }}</strong><br>
+                                            <small>{{ analysis.planning.date_debut|date:"d/m/Y H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if analysis.planning.statut == 'planifie' %}primary{% elif analysis.planning.statut == 'en_cours' %}success{% elif analysis.planning.statut == 'termine' %}secondary{% else %}warning{% endif %}">
+                                                {{ analysis.planning.get_statut_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if analysis.groupe_fk %}
+                                                {{ analysis.groupe_fk.nom }}
+                                            {% else %}
+                                                <span class="text-muted">Aucun</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if analysis.groupes_m2m %}
+                                                {% for groupe in analysis.groupes_m2m %}
+                                                    <span class="badge bg-info">{{ groupe.nom }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">Aucun</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ analysis.apprenants_via_fk|length }}</td>
+                                        <td>{{ analysis.apprenants_via_m2m|length }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if analysis.total_apprenants > 0 %}success{% else %}danger{% endif %}">
+                                                {{ analysis.total_apprenants }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Analyse des groupes -->
+                    <div class="mb-4">
+                        <h5>👥 Analyse des groupes (5 premiers)</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Groupe</th>
+                                        <th>Nb Apprenants</th>
+                                        <th>Plannings via FK</th>
+                                        <th>Plannings via M2M</th>
+                                        <th>Apprenants</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for analysis in groupes_analysis %}
+                                    <tr>
+                                        <td><strong>{{ analysis.groupe.nom }}</strong></td>
+                                        <td>
+                                            <span class="badge bg-{% if analysis.apprenants_count > 0 %}success{% else %}warning{% endif %}">
+                                                {{ analysis.apprenants_count }}
+                                            </span>
+                                        </td>
+                                        <td>{{ analysis.plannings_via_fk }}</td>
+                                        <td>{{ analysis.plannings_via_m2m }}</td>
+                                        <td>
+                                            {% for apprenant in analysis.apprenants_list %}
+                                                <small>{{ apprenant.first_name }} {{ apprenant.last_name }}</small>{% if not forloop.last %}, {% endif %}
+                                            {% empty %}
+                                                <span class="text-muted">Aucun apprenant</span>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Actions recommandées -->
+                    <div class="alert alert-warning">
+                        <h5>💡 Actions recommandées</h5>
+                        <ol>
+                            <li><strong>Vérifiez les assignations de groupes</strong> : Assurez-vous que les apprenants sont bien assignés aux groupes</li>
+                            <li><strong>Utilisez les deux champs</strong> : Les plannings peuvent utiliser soit le champ "groupe" (FK) soit "groupes" (M2M)</li>
+                            <li><strong>Vérifiez les statuts</strong> : Seuls les plannings avec statut "planifié" ou "en_cours" s'affichent</li>
+                            <li><strong>Vérifiez les dates</strong> : Les plannings terminés peuvent ne pas s'afficher selon la vue</li>
+                        </ol>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="{% url 'celica_web:planning_list' %}" class="btn btn-primary">Voir tous les plannings</a>
+                        <a href="{% url 'celica_web:groupe_list' %}" class="btn btn-secondary">Gérer les groupes</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

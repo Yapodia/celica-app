@@ -1,0 +1,269 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Journal d'événements - {{ test.titre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .event-card {
+        border-left: 4px solid #007bff;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.25rem;
+    }
+    
+    .event-card.violation {
+        border-left-color: #dc3545;
+        background: #f8d7da;
+    }
+    
+    .event-card.focus {
+        border-left-color: #ffc107;
+        background: #fff3cd;
+    }
+    
+    .event-card.question {
+        border-left-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .event-timestamp {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .event-user {
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .event-description {
+        margin-top: 0.5rem;
+        color: #212529;
+    }
+    
+    .filters-section {
+        background: #e9ecef;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-clipboard-list"></i>
+                    Journal d'événements - {{ test.titre }}
+                </h1>
+                <a href="{% url 'celica_web:test_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour aux tests
+                </a>
+            </div>
+            
+            <!-- Statistiques -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-number">{{ events.paginator.count }}</div>
+                    <div class="stat-label">Total événements</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ events|length }}</div>
+                    <div class="stat-label">Événements affichés</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ events.paginator.num_pages }}</div>
+                    <div class="stat-label">Pages</div>
+                </div>
+            </div>
+            
+            <!-- Filtres -->
+            <div class="filters-section">
+                <h5 class="mb-3">
+                    <i class="fas fa-filter"></i> Filtres
+                </h5>
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="event_type" class="form-label">Type d'événement</label>
+                        <select name="event_type" id="event_type" class="form-select">
+                            <option value="">Tous les types</option>
+                            {% for event_type_code, event_type_name in event_types %}
+                                <option value="{{ event_type_code }}" {% if filters.event_type == event_type_code %}selected{% endif %}>
+                                    {{ event_type_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="user" class="form-label">Utilisateur</label>
+                        <input type="text" name="user" id="user" class="form-control" 
+                               value="{{ filters.user }}" placeholder="Rechercher par email...">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_from" class="form-label">Date début</label>
+                        <input type="date" name="date_from" id="date_from" class="form-control" 
+                               value="{{ filters.date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_to" class="form-label">Date fin</label>
+                        <input type="date" name="date_to" id="date_to" class="form-control" 
+                               value="{{ filters.date_to }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-sm me-2">
+                            <i class="fas fa-search"></i> Filtrer
+                        </button>
+                        <a href="{% url 'celica_web:test_event_logs' test.id %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-times"></i> Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Liste des événements -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Événements récents
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if events %}
+                        {% for event in events %}
+                            <div class="event-card {% if event.event_type in 'violation_detected,copy_attempt,paste_attempt,right_click,keyboard_shortcut,dev_tools,screenshot_attempt' %}violation{% elif event.event_type in 'page_focus,page_blur' %}focus{% elif event.event_type in 'question_view,question_answer,question_change' %}question{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge bg-{{ event.get_severity_color }}">{{ event.get_event_type_display }}</span>
+                                        {% if event.question_number %}
+                                            <span class="badge bg-info">Question {{ event.question_number }}</span>
+                                        {% endif %}
+                                        {% if event.session_id %}
+                                            <span class="badge bg-secondary">Session {{ event.session_id|slice:":8" }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <small class="event-timestamp">{{ event.timestamp|date:"d/m/Y H:i:s" }}</small>
+                                </div>
+                                
+                                <div class="event-user mt-2">
+                                    <i class="fas fa-user"></i> {{ event.utilisateur.get_full_name }} ({{ event.utilisateur.email }})
+                                </div>
+                                
+                                <div class="event-description">
+                                    {{ event.get_event_description }}
+                                </div>
+                                
+                                {% if event.event_data %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle"></i> Données: {{ event.event_data|truncatechars:100 }}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if event.duration %}
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> Durée: {{ event.duration }}ms
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        
+                        <!-- Pagination -->
+                        {% if events.has_other_pages %}
+                            <nav aria-label="Pagination des événements" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if events.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if filters.event_type %}&event_type={{ filters.event_type }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">
+                                                <i class="fas fa-angle-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ events.previous_page_number }}{% if filters.event_type %}&event_type={{ filters.event_type }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">
+                                                <i class="fas fa-angle-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for num in events.paginator.page_range %}
+                                        {% if events.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > events.number|add:'-3' and num < events.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if filters.event_type %}&event_type={{ filters.event_type }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if events.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ events.next_page_number }}{% if filters.event_type %}&event_type={{ filters.event_type }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">
+                                                <i class="fas fa-angle-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ events.paginator.num_pages }}{% if filters.event_type %}&event_type={{ filters.event_type }}{% endif %}{% if filters.user %}&user={{ filters.user }}{% endif %}{% if filters.date_from %}&date_from={{ filters.date_from }}{% endif %}{% if filters.date_to %}&date_to={{ filters.date_to }}{% endif %}">
+                                                <i class="fas fa-angle-double-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucun événement trouvé</h5>
+                            <p class="text-muted">Aucun événement ne correspond aux critères de recherche.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit du formulaire de filtres lors du changement de sélection
+    document.getElementById('event_type').addEventListener('change', function() {
+        this.form.submit();
+    });
+</script>
+{% endblock %} 

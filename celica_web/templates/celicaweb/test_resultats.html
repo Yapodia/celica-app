@@ -1,0 +1,54 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block content %}
+  <div class="container mt-5">
+    <h2>Résultats du Test</h2>
+    {% if test_resultats %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Test : {{ test.titre }}</h5>
+          <p class="card-text"><strong>Utilisateur :</strong> {{ utilisateur.username }}</p>
+          <p class="card-text"><strong>Note :</strong> {{ note }} / 20</p>
+        </div>
+      </div>
+      <h3>Détails des Réponses</h3>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Question</th>
+            <th>Réponse Donnée</th>
+            <th>Réponse Correcte</th>
+            <th>Correct</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for resultat in test_resultats %}
+            <tr>
+              <td>{{ resultat.question.texte }}</td>
+              <td>{{ resultat.reponse_donnee }}</td>
+              <td>{{ resultat.reponse_correcte }}</td>
+              <td>
+                {% if resultat.correct %}
+                  <span class="text-success">✔</span>
+                {% else %}
+                  <span class="text-danger">✖</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if request.user.role == "apprenant" %}
+        <a href="{% url 'mes_resultats' %}" class="btn btn-secondary mt-3">Retour aux Résultats</a>
+      {% else %}
+        <a href="{% url 'resultats_apprenants' %}" class="btn btn-secondary mt-3">Retour aux Résultats</a>
+      {% endif %}
+    {% else %}
+      <p>Aucun résultat disponible pour ce test.</p>
+      {% if request.user.role == "apprenant" %}
+        <a href="{% url 'mes_resultats' %}" class="btn btn-secondary mt-3">Retour</a>
+      {% else %}
+        <a href="{% url 'resultats_apprenants' %}" class="btn btn-secondary mt-3">Retour</a>
+      {% endif %}    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,409 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Centre de Notifications - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <div class="card p-4 border rounded shadow-sm bg-light">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-bell me-2 text-primary"></i>Centre de Notifications
+                    </h4>
+                    <p class="card-text mb-0">
+                        <span class="badge bg-warning">Communications</span>
+                        <small class="text-muted ms-2">Gestion des alertes et messages système</small>
+                    </p>
+                </div>
+                {% if perms.celica_web.gerer_notifications %}
+                <div>
+                    <a href="{% url 'celica_web:notification_add' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Nouvelle Notification
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center bg-primary text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ total_notifications }}</h5>
+                            <small>Total Notifications</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center bg-warning text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ notifications_non_lues }}</h5>
+                            <small>Non Lues</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center bg-success text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ notifications_lues }}</h5>
+                            <small>Lues</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center bg-info text-white h-100">
+                        <div class="card-body py-3">
+                            <i class="fas fa-clock fa-2x mb-2"></i>
+                            <h5 class="mb-1">{{ notifications_recentes }}</h5>
+                            <small>Récentes (24h)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres et actions -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-filter me-2"></i>Filtres et Actions
+                        </h6>
+                        <div>
+                            {% if perms.celica_web.gerer_notifications %}
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="markAllAsRead()">
+                                <i class="fas fa-check-double me-1"></i>Tout marquer lu
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Rechercher</label>
+                            <input type="text" id="searchNotifications" class="form-control" 
+                                   placeholder="Message, type, utilisateur...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Statut</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="">Tous les statuts</option>
+                                <option value="unread">Non lues</option>
+                                <option value="read">Lues</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Type</label>
+                            <select id="typeFilter" class="form-select">
+                                <option value="">Tous les types</option>
+                                <option value="info">Information</option>
+                                <option value="urgence">Urgence</option>
+                                <option value="alerte">Alerte</option>
+                                <option value="rappel">Rappel</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                                <i class="fas fa-undo me-2"></i>Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des notifications -->
+            {% if notifications %}
+                <div id="notificationsContainer">
+                    {% for notification in notifications %}
+                    <div class="notification-item mb-3" 
+                         data-read="{{ notification.est_lue|yesno:'read,unread' }}"
+                         data-type="{{ notification.type_notice|default:'info' }}"
+                         data-message="{{ notification.message|lower }}"
+                         data-user="{{ notification.utilisateur.get_full_name|lower }}">
+                        <div class="card {% if not notification.est_lue %}border-warning{% else %}border-light{% endif %} shadow-sm">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <!-- Icône de type -->
+                                    <div class="col-auto">
+                                        <div class="notification-icon text-center">
+                                            {% if notification.type_notice == 'urgence' %}
+                                                <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
+                                            {% elif notification.type_notice == 'alerte' %}
+                                                <i class="fas fa-exclamation-circle fa-2x text-warning"></i>
+                                            {% elif notification.type_notice == 'rappel' %}
+                                                <i class="fas fa-clock fa-2x text-info"></i>
+                                            {% else %}
+                                                <i class="fas fa-info-circle fa-2x text-primary"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Contenu de la notification -->
+                                    <div class="col">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="card-title mb-1">
+                                                    {{ notification.titre|default:"Notification" }}
+                                                    {% if not notification.est_lue %}
+                                                        <span class="badge bg-warning ms-2">Nouveau</span>
+                                                    {% endif %}
+                                                    <span class="badge 
+                                                        {% if notification.type_notice == 'urgence' %}bg-danger
+                                                        {% elif notification.type_notice == 'alerte' %}bg-warning
+                                                        {% elif notification.type_notice == 'rappel' %}bg-info
+                                                        {% else %}bg-primary{% endif %} ms-2">
+                                                        {{ notification.get_type_notice_display|default:"Info" }}
+                                                    </span>
+                                                </h6>
+                                                <p class="card-text mb-2">{{ notification.message }}</p>
+                                                <div class="text-muted small">
+                                                    <i class="fas fa-user me-1"></i>{{ notification.utilisateur.get_full_name }}
+                                                    <i class="fas fa-calendar ms-3 me-1"></i>{{ notification.date_envoi|date:"d/m/Y à H:i" }}
+                                                    {% if notification.est_lue %}
+                                                        <i class="fas fa-check-circle ms-3 me-1 text-success"></i>Lu
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Actions -->
+                                            <div class="text-end">
+                                                {% if not notification.est_lue and notification.utilisateur == request.user %}
+                                                <a href="{% url 'celica_web:marquer_lue' notification.id %}" 
+                                                   class="btn btn-outline-success btn-sm mb-2" 
+                                                   title="Marquer comme lu">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                                {% endif %}
+                                                {% if perms.celica_web.gerer_notifications %}
+                                                <a href="{% url 'celica_web:supprimer_notification' id=notification.id %}" 
+                                                   class="btn btn-outline-danger btn-sm mb-2"
+                                                   onclick="return confirm('Supprimer cette notification ?')"
+                                                   title="Supprimer">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Message si aucun résultat après filtrage -->
+                <div id="noResults" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucune notification trouvée</h5>
+                    <p class="text-muted">Essayez de modifier vos critères de recherche</p>
+                </div>
+
+            {% else %}
+                <!-- État vide -->
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-bell-slash fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">Aucune notification</h4>
+                        <p class="text-muted mb-4">
+                            Vous n'avez aucune notification pour le moment. Les nouvelles communications apparaîtront ici.
+                        </p>
+                        {% if perms.celica_web.gerer_notifications %}
+                        <a href="{% url 'celica_web:notification_add' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Créer une Notification
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Actions en lot (si admin) -->
+            {% if perms.celica_web.gerer_notifications and notifications %}
+            <div class="card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Actions Groupées
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-success w-100" onclick="markAllAsRead()">
+                                <i class="fas fa-check-double me-2"></i>Marquer toutes comme lues
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-warning w-100" onclick="markAllAsUnread()">
+                                <i class="fas fa-envelope me-2"></i>Marquer toutes comme non lues
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-danger w-100" 
+                                    onclick="deleteAllNotifications()">
+                                <i class="fas fa-trash-alt me-2"></i>Supprimer toutes (lues)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchNotifications');
+    const statusFilter = document.getElementById('statusFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const notificationsContainer = document.getElementById('notificationsContainer');
+    const noResults = document.getElementById('noResults');
+
+    function filterNotifications() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const typeValue = typeFilter.value;
+        const items = document.querySelectorAll('.notification-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            let show = true;
+
+            // Filtre par recherche
+            if (searchTerm) {
+                const message = item.dataset.message || '';
+                const user = item.dataset.user || '';
+                if (!message.includes(searchTerm) && !user.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+
+            // Filtre par statut
+            if (statusValue && item.dataset.read !== statusValue) {
+                show = false;
+            }
+
+            // Filtre par type
+            if (typeValue && item.dataset.type !== typeValue) {
+                show = false;
+            }
+
+            if (show) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Afficher/masquer le message "aucun résultat"
+        if (notificationsContainer) {
+            if (visibleCount === 0 && items.length > 0) {
+                noResults.style.display = 'block';
+                notificationsContainer.style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                notificationsContainer.style.display = 'block';
+            }
+        }
+    }
+
+    // Événements pour les filtres
+    if (searchInput) searchInput.addEventListener('input', filterNotifications);
+    if (statusFilter) statusFilter.addEventListener('change', filterNotifications);
+    if (typeFilter) typeFilter.addEventListener('change', filterNotifications);
+});
+
+function clearFilters() {
+    const searchInput = document.getElementById('searchNotifications');
+    const statusFilter = document.getElementById('statusFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    
+    if (searchInput) searchInput.value = '';
+    if (statusFilter) statusFilter.value = '';
+    if (typeFilter) typeFilter.value = '';
+    
+    // Réafficher toutes les notifications
+    document.querySelectorAll('.notification-item').forEach(item => {
+        item.style.display = 'block';
+    });
+    
+    const noResults = document.getElementById('noResults');
+    const container = document.getElementById('notificationsContainer');
+    if (noResults) noResults.style.display = 'none';
+    if (container) container.style.display = 'block';
+}
+
+
+
+function markAllAsRead() {
+    if (confirm('Marquer toutes les notifications comme lues ?')) {
+        // Ici on pourrait faire un appel AJAX
+        location.reload();
+    }
+}
+
+function markAllAsUnread() {
+    if (confirm('Marquer toutes les notifications comme non lues ?')) {
+        // Ici on pourrait faire un appel AJAX
+        location.reload();
+    }
+}
+
+function deleteAllNotifications() {
+    if (confirm('Supprimer toutes les notifications lues ? Cette action est irréversible.')) {
+        // Ici on pourrait faire un appel AJAX
+        location.reload();
+    }
+}
+
+// Animation d'entrée pour les nouvelles notifications
+document.querySelectorAll('.notification-item').forEach((item, index) => {
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+        item.style.transition = 'all 0.3s ease';
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+    }, index * 100);
+});
+</script>
+
+<style>
+.notification-icon {
+    width: 60px;
+}
+
+.notification-item {
+    transition: all 0.3s ease;
+}
+
+.notification-item:hover {
+    transform: translateY(-2px);
+}
+
+.card.border-warning {
+    border-left-width: 4px !important;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+@media (max-width: 768px) {
+    .notification-icon {
+        width: 40px;
+    }
+    
+    .notification-icon i {
+        font-size: 1.5rem !important;
+    }
+}
+</style>{% endblock %}

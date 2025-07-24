@@ -1,0 +1,13 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Importer Test{% endblock %}
+
+{% block content %}
+<h2>Importer Test</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Importer</button>
+    <a href="{% url 'celica_web:test_list' %}">Annuler</a>
+</form>
+{% endblock %}

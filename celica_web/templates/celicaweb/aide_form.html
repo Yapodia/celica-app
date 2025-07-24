@@ -1,0 +1,126 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}
+    {% if form.instance.pk %}Modifier Aide{% else %}Créer Aide{% endif %} - CELICAWeb
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">{% if form.instance.pk %}Modifier Aide{% else %}Créer Aide{% endif %}</h1>
+
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            Veuillez corriger les erreurs ci-dessous.
+        </div>
+    {% endif %}
+
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="mb-3">
+            {{ form.titre.label_tag }}
+            <input type="text" name="titre" class="form-control" value="{{ form.titre.value|default:'' }}" required>
+            {% if form.titre.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.titre.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if form.titre.help_text %}
+                <small class="form-text text-muted">{{ form.titre.help_text }}</small>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.contenu.label_tag }}
+            <textarea name="contenu" class="form-control" rows="5" required>{{ form.contenu.value|default:'' }}</textarea>
+            {% if form.contenu.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.contenu.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if form.contenu.help_text %}
+                <small class="form-text text-muted">{{ form.contenu.help_text }}</small>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.categorie.label_tag }}
+            {{ form.categorie }}
+            {% if form.categorie.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.categorie.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if form.categorie.help_text %}
+                <small class="form-text text-muted">{{ form.categorie.help_text }}</small>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.module.label_tag }}
+            {{ form.module }}
+            {% if form.module.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.module.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if form.module.help_text %}
+                <small class="form-text text-muted">{{ form.module.help_text }}</small>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a href="{% url 'celica_web:consulter_aide' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('form').addEventListener('submit', (e) => {
+            const titreInput = document.querySelector('input[name="titre"]');
+            const contenuInput = document.querySelector('textarea[name="contenu"]');
+
+            if (!titreInput.value.trim()) {
+                e.preventDefault();
+                alert('Le champ titre est requis.');
+                return;
+            }
+            if (!contenuInput.value.trim()) {
+                e.preventDefault();
+                alert('Le champ contenu est requis.');
+                return;
+            }
+
+            if (!e.target.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            e.target.classList.add('was-validated');
+        });
+    });
+</script>
+{% endblock %}

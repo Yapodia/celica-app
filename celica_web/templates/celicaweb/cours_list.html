@@ -1,0 +1,171 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Liste des Cours - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4 d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-book me-2"></i>Liste des Cours</span>
+                {% if perms.celica_web.gerer_cours %}
+                <a href="{% url 'celica_web:cours_form_new' %}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Nouveau cours
+                </a>
+                {% endif %}
+            </h1>
+            
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtres</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="module" class="form-label">Module</label>
+                            <select name="module" id="module" class="form-select">
+                                <option value="">Tous les modules</option>
+                                {% for module in modules %}
+                                    <option value="{{ module.id }}" {% if selected_module == module.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ module.intitule }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Statut</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">Tous les statuts</option>
+                                <option value="actif" {% if selected_status == 'actif' %}selected{% endif %}>Actif</option>
+                                <option value="inactif" {% if selected_status == 'inactif' %}selected{% endif %}>Inactif</option>
+                                <option value="brouillon" {% if selected_status == 'brouillon' %}selected{% endif %}>Brouillon</option>
+                                <option value="archive" {% if selected_status == 'archive' %}selected{% endif %}>Archivé</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search me-1"></i>Filtrer
+                            </button>
+                            <a href="{% url 'celica_web:cours_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Réinitialiser
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Liste des cours -->
+            <div class="row">
+                {% if cours %}
+                    {% for cours_item in cours %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm" style="transition: transform 0.2s;">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{% if cours_item.status == 'actif' %}success{% elif cours_item.status == 'inactif' %}warning{% elif cours_item.status == 'brouillon' %}info{% else %}secondary{% endif %}">
+                                    {{ cours_item.get_status_display }}
+                                </span>
+                                <small class="text-muted">{{ cours_item.created_at|date:"d/m/Y" }}</small>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">{{ cours_item.titre|default:'Cours sans titre' }}</h5>
+                                <p class="card-text flex-grow-1">{{ cours_item.description|default:'Aucune description'|truncatechars:100 }}</p>
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-layer-group me-1"></i>{{ cours_item.module.intitule }}<br/>
+                                        <i class="fas fa-user me-1"></i>Instructeur : {{ cours_item.instructeur.get_full_name|default:cours_item.instructeur.email }}<br/>
+                                        <i class="fas fa-info-circle me-1"></i>Statut : {{ cours_item.get_status_display }}
+                                    </small>
+                                </div>
+                                <div class="mt-auto">
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{% url 'celica_web:cours_detail' cours_item.pk %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>Voir
+                                        </a>
+                                        {% if perms.celica_web.gerer_cours %}
+                                        <a href="{% url 'celica_web:cours_form_edit' cours_item.id %}" class="btn btn-outline-warning btn-sm">
+                                            <i class="fas fa-edit me-1"></i>Modifier
+                                        </a>
+                                        {% if cours_item.fichier %}
+                                        <a href="{% url 'celica_web:cours_export' pk=cours_item.pk format_fichier='original' %}" class="btn btn-outline-info btn-sm" title="Télécharger le fichier PDF">
+                                            <i class="fas fa-file-download me-1"></i>Fichier PDF
+                                        </a>
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">Aucun cours disponible</h4>
+                            <p class="text-muted">Aucun cours ne correspond à vos critères de recherche.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Pagination -->
+            {% if cours.has_other_pages %}
+            <nav aria-label="Pagination des cours" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if cours.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ cours.previous_page_number }}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in cours.paginator.page_range %}
+                        {% if cours.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > cours.number|add:'-3' and num < cours.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if cours.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ cours.next_page_number }}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ cours.paginator.num_pages }}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            <!-- Actions -->
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,335 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CELICAWeb - Plateforme d'évaluation ASECNA{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #0dcaf0;
+        }
+        
+        html, body {
+            height: 100%;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: box-shadow 0.15s ease-in-out;
+        }
+        
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn {
+            border-radius: 0.375rem;
+            font-weight: 500;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 0.375rem;
+        }
+        
+        .alert {
+            border-radius: 0.5rem;
+            border: none;
+        }
+        
+        .footer {
+            flex-shrink: 0;
+            background-color: #343a40;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .sidebar .nav-link {
+            color: #495057;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            margin: 0.25rem 0;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+            color: var(--primary-color);
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .main-content {
+            flex: 1 0 auto;
+            padding: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+        }
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div class="loading" id="loading">
+        <div class="loading-content">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <p class="mt-2">Chargement en cours...</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container" style="padding-left: 50px; padding-right: 30px;">
+            <a class="navbar-brand" href="{% url 'celica_web:visitor_index' %}">
+                <img src="{% static 'logo_asecna.png' %}" alt="Logo ASECNA" style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px;">
+                CELICAWeb
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'celica_web:index' %}">
+                                <i class="fas fa-home me-1"></i>Accueil
+                            </a>
+                        </li>
+                        
+                        {% if perms.celica_web.gerer_cours %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'celica_web:cours_list' %}">
+                                <i class="fas fa-book me-1"></i>Cours
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if perms.celica_web.gerer_tests %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'celica_web:test_list' %}">
+                                <i class="fas fa-clipboard-list me-1"></i>Tests
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if perms.celica_web.gerer_modules %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'celica_web:module_list' %}">
+                                <i class="fas fa-layer-group me-1"></i>Modules
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if perms.celica_web.gerer_plannings %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'celica_web:planning_list' %}">
+                                <i class="fas fa-calendar me-1"></i>Plannings
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ user.get_full_name|default:user.email }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'celica_web:consulter_aide' %}">
+                                    <i class="fas fa-question-circle me-2"></i>Aide
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'celica_web:consulter_a_propos' %}">
+                                    <i class="fas fa-info-circle me-2"></i>À propos
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'celica_web:logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'celica_web:login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Connexion
+                            </a>
+                        </li>
+                        {# Lien d'inscription supprimé car l'URL 'register_user' n'existe pas #}
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container" style="padding-left: 50px; padding-right: 30px;">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>CELICAWeb</h5>
+                    <p>Plateforme d'administration et de correction automatique de tests pour CELICA Maintenance ASECNA.</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Liens utiles</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'celica_web:consulter_aide' %}" class="text-light">Aide</a></li>
+                        <li><a href="{% url 'celica_web:consulter_a_propos' %}" class="text-light">À propos</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Contact</h6>
+                    <p class="text-light">
+                        <i class="fas fa-envelope me-2"></i>support@celicaweb.com<br>
+                        <i class="fas fa-phone me-2"></i>+226 XX XX XX XX
+                    </p>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="mb-0">&copy; 2025 CELICAWeb - ASECNA. Tous droits réservés.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Afficher/masquer le loading
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Auto-hide alerts after 5 seconds (but not persistent sections)
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert:not([data-persistent="true"])');
+                alerts.forEach(function(alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+        
+        // Protection contre les autres scripts qui masquent des éléments
+        document.addEventListener('DOMContentLoaded', function() {
+            // Intercepter les tentatives de suppression de notre section
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        mutation.removedNodes.forEach(function(node) {
+                            if (node.id === 'comptes-en-attente-section' || 
+                                (node.nodeType === 1 && node.querySelector('#comptes-en-attente-section'))) {
+                                // Empêcher la suppression
+                                console.warn('Tentative de suppression de la section comptes-en-attente bloquée');
+                                return false;
+                            }
+                        });
+                    }
+                });
+            });
+            
+            const comptesSection = document.getElementById('comptes-en-attente-section');
+            if (comptesSection) {
+                observer.observe(comptesSection.parentNode, { childList: true, subtree: true });
+            }
+        });
+        
+        // Confirmation pour les actions destructives
+        function confirmAction(message) {
+            return confirm(message || 'Êtes-vous sûr de vouloir effectuer cette action ?');
+        }
+        
+        // Auto-submit forms with loading
+        document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form[data-auto-submit]');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function() {
+                    showLoading();
+                });
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}</body>
+</html>

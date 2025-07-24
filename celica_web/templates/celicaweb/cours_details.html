@@ -1,0 +1,48 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}
+    Détails du Cours : {{ cours.titre }} - CELICAWeb
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h2>Détails du Cours</h2>
+
+    <!-- Carte pour les détails du cours -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">{{ cours.titre }}</h3>
+            <p class="card-text">{{ cours.description|default:"Aucune description disponible." }}</p>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Module :</strong> {{ cours.module.intitule|default:"Non spécifié" }}</li>
+                <li class="list-group-item"><strong>Date de création :</strong> {{ cours.date_creation|date:"d M Y"|default:"Non spécifiée" }}</li>
+                {% if cours.fichier %}
+                    <li class="list-group-item">
+                        <strong>Fichier :</strong>
+                        <a href="{{ cours.fichier.url }}" class="btn btn-sm btn-outline-primary" target="_blank">Télécharger</a>
+                    </li>
+                {% else %}
+                    <li class="list-group-item"><strong>Fichier :</strong> Aucun fichier associé</li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="d-flex gap-2">
+        <a href="{% url 'celica_web:cours_form_edit' cours.id %}" class="btn btn-primary">Modifier</a>
+        <a href="{% url 'celica_web:cours_delete' cours.id %}" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce cours ?');">Supprimer</a>
+        <a href="{% url 'celica_web:cours_import' %}" class="btn btn-success">Importer un nouveau cours</a>
+        <a href="{% url 'celica_web:cours_list' %}" class="btn btn-secondary">Retour à la liste</a>
+    </div>
+</div>
+{% endblock %}

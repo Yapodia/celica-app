@@ -1,0 +1,22 @@
+{% extends 'celicaweb/base.html' %}
+{% block title %}Confirmer la Suppression du Test{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Confirmer la Suppression</h2>
+    {% if messages %}
+        <div class="alert alert-info" aria-live="polite">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="alert alert-danger" role="alert">
+        <p><strong>Attention :</strong> Supprimer le test "{{ test.titre|default:'Test sans titre' }}" est irréversible. Toutes les questions associées seront affectées.</p>
+    </div>
+    <form method="post" aria-label="Formulaire de suppression de test">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Oui, Supprimer</button>
+        <a href="{% url 'celica_web:test_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+{% endblock %}

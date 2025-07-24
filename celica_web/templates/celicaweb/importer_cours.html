@@ -1,0 +1,109 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Importer un cours - CELICAWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Importer un cours</h1>
+
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Instructions pour le format du fichier -->
+    <div class="alert alert-info">
+        <p><strong>Instructions :</strong></p>
+        <ul>
+            <li>Formats acceptés : .pdf</li>
+            <li>Taille maximale : 20 Mo</li>
+            <li>Le fichier doit correspondre au module sélectionné.</li>
+        </ul>
+    </div>
+
+    <!-- Formulaire d'importation -->
+    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <div class="form-group mb-3">
+            <label for="{{ form.module.id_for_label }}" class="form-label">{{ form.module.label }}</label>
+            {{ form.module }}
+            {% if form.module.errors %}
+                <span class="text-danger">{{ form.module.errors }}</span>
+            {% endif %}
+            {% if form.module.help_text %}
+                <small class="form-text text-muted">{{ form.module.help_text }}</small>
+            {% endif %}
+        </div>
+        <div class="form-group mb-3">
+            <label for="{{ form.titre.id_for_label }}" class="form-label">{{ form.titre.label }}</label>
+            {{ form.titre }}
+            {% if form.titre.errors %}
+                <span class="text-danger">{{ form.titre.errors }}</span>
+            {% endif %}
+            {% if form.titre.help_text %}
+                <small class="form-text text-muted">{{ form.titre.help_text }}</small>
+            {% endif %}
+        </div>
+        <div class="form-group mb-3">
+            <label for="{{ form.fichier.id_for_label }}" class="form-label">{{ form.fichier.label }}</label>
+            {{ form.fichier }}
+            {% if form.fichier.errors %}
+                <span class="text-danger">{{ form.fichier.errors }}</span>
+            {% endif %}
+            {% if form.fichier.help_text %}
+                <small class="form-text text-muted">{{ form.fichier.help_text }}</small>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Importer</button>
+        <a href="{% url 'celica_web:cours_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+
+<!-- JavaScript pour gérer les contraintes -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('form').addEventListener('submit', (e) => {
+            const fichierInput = document.querySelector('input[name="fichier"]');
+            const maxFileSize = 20 * 1024 * 1024; // 20 MB
+            const validExtensions = ['.pdf'];
+
+            if (fichierInput.files.length > 0) {
+                const file = fichierInput.files[0];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+                if (!validExtensions.includes(fileExtension)) {
+                    e.preventDefault();
+                    alert('Format de fichier non accepté. Utilisez .pdf.');
+                    return;
+                }
+                if (file.size > maxFileSize) {
+                    e.preventDefault();
+                    alert('Le fichier dépasse la taille maximale de 20 Mo.');
+                    return;
+                }
+            } else {
+                e.preventDefault();
+                alert('Veuillez sélectionner un fichier PDF.');
+            }
+
+            // Validation Bootstrap
+            if (!e.target.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            e.target.classList.add('was-validated');
+        });
+    });
+</script>
+{% endblock %}

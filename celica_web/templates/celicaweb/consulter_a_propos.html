@@ -1,0 +1,392 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}À Propos - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card p-4 border rounded shadow-sm bg-light">
+            <!-- En-tête -->
+            <div class="text-center mb-5">
+                <div class="mb-4">
+                    <i class="fas fa-info-circle fa-4x text-primary mb-3"></i>
+                    <h2 class="card-title text-primary">À Propos de CelicaWeb</h2>
+                    <p class="lead text-muted">
+                        Plateforme de gestion des tests QCM pour la CELICA Maintenance
+                    </p>
+                </div>
+            </div>
+
+            {% if a_propos %}
+                <!-- Informations principales -->
+                <div class="row mb-5">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cog me-2"></i>Informations Système
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong class="text-muted">Application :</strong>
+                                    <div class="fw-bold text-primary">{{ a_propos.nom_application }}</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-muted">Version :</strong>
+                                    <div>
+                                        <span class="badge bg-success fs-6">{{ a_propos.version }}</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-muted">Organisme :</strong>
+                                    <div class="fw-bold text-info">{{ a_propos.organisme }}</div>
+                                </div>
+                                <div class="mb-0">
+                                    <strong class="text-muted">Dernière mise à jour :</strong>
+                                    <div>
+                                        <i class="fas fa-calendar me-1 text-warning"></i>
+                                        {{ a_propos.date_mise_a_jour|date:"d F Y à H:i" }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-info">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-envelope me-2"></i>Contact & Support
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong class="text-muted">Email de contact :</strong>
+                                    <div>
+                                        <a href="mailto:{{ a_propos.contact_email }}" class="text-primary fw-bold">
+                                            <i class="fas fa-envelope me-1"></i>{{ a_propos.contact_email }}
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-muted">Support technique :</strong>
+                                    <div>
+                                        <span class="badge bg-success">24/7 Disponible</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-muted">Délai de réponse :</strong>
+                                    <div class="text-info">
+                                        <i class="fas fa-clock me-1"></i>24-48 heures
+                                    </div>
+                                </div>
+                                <div class="mb-0">
+                                    <a href="{% url 'celica_web:consulter_aide' %}" class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-question-circle me-2"></i>Centre d'aide
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="card mb-5">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info me-2 text-primary"></i>Description de l'Application
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-justify">{{ a_propos.description }}</p>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- État par défaut si aucune info disponible -->
+                <div class="card mb-5">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Informations par défaut
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            Les informations détaillées de l'application ne sont pas encore configurées. 
+                            Voici les informations par défaut :
+                        </p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Application :</strong> CelicaWeb<br>
+                                <strong>Version :</strong> 1.0.0<br>
+                                <strong>Organisme :</strong> ASECNA
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Contact :</strong> admin@celicaweb.com<br>
+                                <strong>Support :</strong> 24/7<br>
+                                <strong>Type :</strong> Plateforme QCM
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Fonctionnalités principales -->
+            <div class="card mb-5">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rocket me-2"></i>Fonctionnalités Principales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-clipboard-list fa-3x text-primary mb-3"></i>
+                                <h6 class="fw-bold">Gestion des Tests</h6>
+                                <p class="text-muted small">
+                                    Création, modification et gestion complète des tests QCM
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-users fa-3x text-success mb-3"></i>
+                                <h6 class="fw-bold">Gestion des Groupes</h6>
+                                <p class="text-muted small">
+                                    Organisation des apprenants en groupes structurés
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                                <h6 class="fw-bold">Statistiques</h6>
+                                <p class="text-muted small">
+                                    Analyse détaillée des performances et résultats
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-calendar-alt fa-3x text-warning mb-3"></i>
+                                <h6 class="fw-bold">Planification</h6>
+                                <p class="text-muted small">
+                                    Programmation et organisation des sessions
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-book fa-3x text-purple mb-3"></i>
+                                <h6 class="fw-bold">Modules de Cours</h6>
+                                <p class="text-muted small">
+                                    Gestion structurée des contenus pédagogiques
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-shield-alt fa-3x text-danger mb-3"></i>
+                                <h6 class="fw-bold">Sécurité</h6>
+                                <p class="text-muted small">
+                                    Authentification et contrôle d'accès sécurisés
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technologies utilisées -->
+            <div class="card mb-5">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-code me-2"></i>Technologies Utilisées
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Langages de programmation -->
+                    <h6 class="text-muted mb-3"><i class="fas fa-laptop-code me-2"></i>Langages de Programmation</h6>
+                    <div class="row text-center mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="p-3">
+                                <i class="fab fa-python fa-3x text-success mb-2"></i>
+                                <h6>Python</h6>
+                                <small class="text-muted">Langage Backend</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="p-3">
+                                <i class="fab fa-html5 fa-3x text-danger mb-2"></i>
+                                <h6>HTML5</h6>
+                                <small class="text-muted">Structure Web</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="p-3">
+                                <i class="fab fa-css3-alt fa-3x text-primary mb-2"></i>
+                                <h6>CSS3</h6>
+                                <small class="text-muted">Styles & Design</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Frameworks et outils -->
+                    <h6 class="text-muted mb-3"><i class="fas fa-tools me-2"></i>Frameworks & Outils</h6>
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3">
+                                <i class="fab fa-python fa-3x text-success mb-2"></i>
+                                <h6>Django</h6>
+                                <small class="text-muted">Framework Backend</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3">
+                                <i class="fab fa-bootstrap fa-3x text-primary mb-2"></i>
+                                <h6>Bootstrap 5</h6>
+                                <small class="text-muted">Interface Utilisateur</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3">
+                                <i class="fas fa-database fa-3x text-warning mb-2"></i>
+                                <h6>MariaDB</h6>
+                                <small class="text-muted">Base de Données</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3">
+                                <i class="fab fa-js-square fa-3x text-info mb-2"></i>
+                                <h6>JavaScript</h6>
+                                <small class="text-muted">Interactions Frontend</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des versions -->
+            <div class="card mb-5">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Historique des Versions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item mb-3">
+                            <div class="row">
+                                <div class="col-2 text-center">
+                                    <span class="badge bg-primary rounded-pill">v1.0.0</span>
+                                </div>
+                                <div class="col-10">
+                                    <h6 class="mb-1">Version Initiale</h6>
+                                    <p class="text-muted small mb-1">
+                                        Mise en place de la plateforme de base avec gestion des tests, utilisateurs et résultats.
+                                    </p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>{{ a_propos.date_mise_a_jour|date:"F Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-item mb-3">
+                            <div class="row">
+                                <div class="col-2 text-center">
+                                    <span class="badge bg-success rounded-pill">v1.1.0</span>
+                                </div>
+                                <div class="col-10">
+                                    <h6 class="mb-1">Améliorations Interface</h6>
+                                    <p class="text-muted small mb-1">
+                                        Modernisation de l'interface utilisateur et ajout des statistiques avancées.
+                                    </p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>À venir
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-link me-2 text-primary"></i>Liens Utiles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'celica_web:index' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-home me-2"></i>Accueil
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'celica_web:consulter_aide' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-question-circle me-2"></i>Centre d'Aide
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'celica_web:consulter_statistiques' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-chart-bar me-2"></i>Statistiques
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="mailto:{{ a_propos.contact_email|default:'admin@celicaweb.com' }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-envelope me-2"></i>Contact
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer de la page -->
+            <div class="text-center mt-5 pt-4 border-top">
+                <p class="text-muted">
+                    <small>
+                        © {% now "Y" %} ASECNA - CELICA Maintenance. 
+                        Développé avec <i class="fas fa-heart text-danger"></i> pour l'excellence pédagogique.
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.text-purple {
+    color: #6f42c1 !important;
+}
+
+.timeline-item {
+    position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 50px;
+    top: 60px;
+    width: 2px;
+    height: 30px;
+    background-color: #dee2e6;
+}
+
+.card-text.text-justify {
+    text-align: justify;
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .timeline-item::after {
+        left: 30px;
+    }
+}
+</style>
+{% endblock %}

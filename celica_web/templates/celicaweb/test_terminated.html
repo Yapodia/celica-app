@@ -1,0 +1,113 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Test Interrompu - CelicaWeb{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white text-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Test Interrompu
+                    </h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-ban fa-4x text-danger mb-3"></i>
+                        <h4 class="text-danger">Votre test a été interrompu</h4>
+                        <p class="lead">
+                            En raison de violations répétées des règles de sécurité, 
+                            votre test a été automatiquement terminé.
+                        </p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-info-circle me-2"></i>Violations détectées :</h5>
+                        {% if violations %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                            <th>Heure</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for violation in violations %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-danger">
+                                                    {{ violation.violation_type|title }}
+                                                </span>
+                                            </td>
+                                            <td>{{ violation.violation }}</td>
+                                            <td>{{ violation.timestamp|date:"H:i:s" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fas fa-times text-danger me-2"></i>Copier-coller répété</li>
+                                <li><i class="fas fa-times text-danger me-2"></i>Utilisation d'outils de développement</li>
+                                <li><i class="fas fa-times text-danger me-2"></i>Changement d'onglet multiple</li>
+                                <li><i class="fas fa-times text-danger me-2"></i>Raccourcis clavier interdits</li>
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-4">
+                        <h5>Que faire maintenant ?</h5>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-user-tie me-2"></i>Contacter votre instructeur</h6>
+                                        <p class="small text-muted">
+                                            Expliquez la situation et demandez une nouvelle tentative.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-history me-2"></i>Consulter l'historique</h6>
+                                        <p class="small text-muted">
+                                            Vérifiez les violations détectées dans votre profil.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'celica_web:apprenant_dashboard' %}" class="btn btn-primary me-2">
+                            <i class="fas fa-home me-2"></i>
+                            Tableau de bord
+                        </a>
+                        <a href="{% url 'celica_web:security_violation' %}" class="btn btn-outline-warning me-2">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Voir les violations
+                        </a>
+                        <a href="{% url 'celica_web:apprenant_tests' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            Mes tests
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

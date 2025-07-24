@@ -1,0 +1,126 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}{% if module %}Modifier{% else %}Ajouter{% endif %} Module - CELICAWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>{% if module %}Modifier{% else %}Ajouter{% endif %} Module</h2>
+
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Formulaire -->
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <div class="form-group mb-3">
+            <label for="{{ form.intitule.id_for_label }}" class="form-label">{{ form.intitule.label }}</label>
+            {{ form.intitule }}
+            {% if form.intitule.errors %}
+                <span class="text-danger">{{ form.intitule.errors }}</span>
+            {% endif %}
+            {% if form.intitule.help_text %}
+                <small class="form-text text-muted">{{ form.intitule.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <span class="text-danger">{{ form.description.errors }}</span>
+            {% endif %}
+            {% if form.description.help_text %}
+                <small class="form-text text-muted">{{ form.description.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="{{ form.categorie.id_for_label }}" class="form-label">{{ form.categorie.label }}</label>
+            {{ form.categorie }}
+            {% if form.categorie.errors %}
+                <span class="text-danger">{{ form.categorie.errors }}</span>
+            {% endif %}
+            {% if form.categorie.help_text %}
+                <small class="form-text text-muted">{{ form.categorie.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+                <span class="text-danger">{{ form.status.errors }}</span>
+            {% endif %}
+            {% if form.status.help_text %}
+                <small class="form-text text-muted">{{ form.status.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="{{ form.instructeur_principal.id_for_label }}" class="form-label">{{ form.instructeur_principal.label }}</label>
+            {{ form.instructeur_principal }}
+            {% if form.instructeur_principal.errors %}
+                <span class="text-danger">{{ form.instructeur_principal.errors }}</span>
+            {% endif %}
+            {% if form.instructeur_principal.help_text %}
+                <small class="form-text text-muted">{{ form.instructeur_principal.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">{% if module %}Modifier{% else %}Créer{% endif %}</button>
+            <a href="{% url 'celica_web:module_list' %}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    form.addEventListener('submit', function(e) {
+        const intituleInput = document.querySelector('input[name="intitule"]');
+        const categorieInput = document.querySelector('select[name="categorie"]');
+        
+        let hasErrors = false;
+        
+        if (!intituleInput.value.trim()) {
+            e.preventDefault();
+            alert('Le champ intitulé est requis.');
+            hasErrors = true;
+        }
+        
+        if (!categorieInput.value.trim()) {
+            e.preventDefault();
+            alert('Le champ catégorie est requis.');
+            hasErrors = true;
+        }
+
+        if (hasErrors) {
+            return;
+        }
+
+        // Validation Bootstrap
+        if (!e.target.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        e.target.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}

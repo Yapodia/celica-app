@@ -1,0 +1,346 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Événements de {{ user.get_full_name }} - {{ test.titre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .event-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .event-timeline::before {
+        content: '';
+        position: absolute;
+        left: 1rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .event-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #007bff;
+    }
+    
+    .event-item::before {
+        content: '';
+        position: absolute;
+        left: -1.5rem;
+        top: 1.5rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background: #007bff;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
+    
+    .event-item.violation {
+        border-left-color: #dc3545;
+    }
+    
+    .event-item.violation::before {
+        background: #dc3545;
+    }
+    
+    .event-item.focus {
+        border-left-color: #ffc107;
+    }
+    
+    .event-item.focus::before {
+        background: #ffc107;
+    }
+    
+    .event-item.question {
+        border-left-color: #28a745;
+    }
+    
+    .event-item.question::before {
+        background: #28a745;
+    }
+    
+    .event-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .event-time {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .event-type {
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .event-description {
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+    
+    .event-meta {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        border-top: 4px solid #007bff;
+    }
+    
+    .stat-box.violations {
+        border-top-color: #dc3545;
+    }
+    
+    .stat-box.focus {
+        border-top-color: #ffc107;
+    }
+    
+    .stat-box.questions {
+        border-top-color: #28a745;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #007bff;
+        line-height: 1;
+    }
+    
+    .stat-box.violations .stat-number {
+        color: #dc3545;
+    }
+    
+    .stat-box.focus .stat-number {
+        color: #ffc107;
+    }
+    
+    .stat-box.questions .stat-number {
+        color: #28a745;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    
+    .test-info {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .test-duration {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-user-clock"></i>
+                    Activité de {{ user.get_full_name }} - {{ test.titre }}
+                </h1>
+                <div>
+                    <a href="{% url 'celica_web:test_event_logs' test.id %}" class="btn btn-secondary me-2">
+                        <i class="fas fa-clipboard-list"></i> Journal complet
+                    </a>
+                    <a href="{% url 'celica_web:test_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour aux tests
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Informations du test -->
+            <div class="test-info">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-info-circle"></i> Informations du test</h5>
+                        <p><strong>Test:</strong> {{ test.titre }}</p>
+                        <p><strong>Module:</strong> {{ test.module.intitule }}</p>
+                        <p><strong>Durée:</strong> {{ test.duree }} minutes</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-user"></i> Informations de l'apprenant</h5>
+                        <p><strong>Nom:</strong> {{ user.get_full_name }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Matricule:</strong> {{ user.matricule }}</p>
+                    </div>
+                </div>
+                
+                {% if stats.test_start and stats.test_end %}
+                    <div class="test-duration mt-3">
+                        <i class="fas fa-clock"></i>
+                        Durée du test: 
+                        {% with duration=stats.test_end.timestamp|date:"U"|add:"0" %}
+                            {% with start=stats.test_start.timestamp|date:"U"|add:"0" %}
+                                {% with diff=duration|add:"-"|add:start %}
+                                    {{ diff|floatformat:0 }} secondes
+                                {% endwith %}
+                            {% endwith %}
+                        {% endwith %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Statistiques -->
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-number">{{ stats.total_events }}</div>
+                    <div class="stat-label">Total événements</div>
+                </div>
+                <div class="stat-box violations">
+                    <div class="stat-number">{{ stats.violation_events }}</div>
+                    <div class="stat-label">Violations détectées</div>
+                </div>
+                <div class="stat-box focus">
+                    <div class="stat-number">{{ stats.focus_events }}</div>
+                    <div class="stat-label">Changements de focus</div>
+                </div>
+                <div class="stat-box questions">
+                    <div class="stat-number">{{ stats.question_events }}</div>
+                    <div class="stat-label">Actions sur questions</div>
+                </div>
+            </div>
+            
+            <!-- Timeline des événements -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-stream"></i> Chronologie des événements
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if events %}
+                        <div class="event-timeline">
+                            {% for event in events %}
+                                <div class="event-item {% if event.event_type in 'violation_detected,copy_attempt,paste_attempt,right_click,keyboard_shortcut,dev_tools,screenshot_attempt' %}violation{% elif event.event_type in 'page_focus,page_blur' %}focus{% elif event.event_type in 'question_view,question_answer,question_change' %}question{% endif %}">
+                                    <div class="event-header">
+                                        <div class="event-type">
+                                            <span class="badge bg-{{ event.get_severity_color }}">{{ event.get_event_type_display }}</span>
+                                            {% if event.question_number %}
+                                                <span class="badge bg-info">Question {{ event.question_number }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="event-time">
+                                            {{ event.timestamp|date:"d/m/Y H:i:s" }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="event-description">
+                                        {{ event.get_event_description }}
+                                    </div>
+                                    
+                                    {% if event.event_data %}
+                                        <div class="event-meta">
+                                            <i class="fas fa-info-circle"></i> 
+                                            Données: {{ event.event_data|truncatechars:80 }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if event.duration %}
+                                        <div class="event-meta">
+                                            <i class="fas fa-clock"></i> 
+                                            Durée: {{ event.duration }}ms
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if event.session_id %}
+                                        <div class="event-meta">
+                                            <i class="fas fa-fingerprint"></i> 
+                                            Session: {{ event.session_id|slice:":8" }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-user-clock fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucun événement enregistré</h5>
+                            <p class="text-muted">Aucun événement n'a été enregistré pour cet utilisateur sur ce test.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Analyse des violations -->
+            {% if stats.violation_events > 0 %}
+                <div class="card mt-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> Analyse des violations
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-warning"></i>
+                            <strong>Attention:</strong> {{ stats.violation_events }} violation(s) de sécurité détectée(s) 
+                            pour cet utilisateur sur ce test.
+                        </div>
+                        
+                        <h6>Recommandations:</h6>
+                        <ul>
+                            <li>Vérifier si les violations sont justifiées (problème technique, etc.)</li>
+                            <li>Considérer une reprogrammation du test si nécessaire</li>
+                            <li>Contacter l'apprenant pour clarifier la situation</li>
+                            <li>Consulter les détails complets des violations</li>
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animation des événements au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const events = document.querySelectorAll('.event-item');
+        events.forEach((event, index) => {
+            setTimeout(() => {
+                event.style.opacity = '0';
+                event.style.transform = 'translateX(-20px)';
+                event.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    event.style.opacity = '1';
+                    event.style.transform = 'translateX(0)';
+                }, 100);
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %} 

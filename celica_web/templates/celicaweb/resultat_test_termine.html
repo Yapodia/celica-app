@@ -1,0 +1,294 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Résultat du Test - CelicaWeb{% endblock %}
+
+{% block extra_css %}
+<style>
+    .resultat-container {
+        max-width: 1100px;
+        width: 100%;
+        margin: 2rem auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .resultat-header {
+        margin-bottom: 2rem;
+    }
+    
+    .resultat-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .note-principale {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 1rem 0;
+    }
+    
+    .appreciation-badge {
+        font-size: 1.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        margin-bottom: 2rem;
+    }
+    
+    .details-score {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .score-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 0.5rem 0;
+        font-size: 1.1rem;
+    }
+    
+    .progress-custom {
+        height: 20px;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    
+    .btn-dashboard {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-dashboard:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-resultats {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 20px;
+        margin: 0.5rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-resultats:hover {
+        transform: translateY(-1px);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="resultat-container">
+        <!-- Header avec icône et titre -->
+        <div class="resultat-header">
+            {% if resultat.appreciation == 'excellent' or resultat.appreciation == 'tres_bien' %}
+                <div class="resultat-icon text-success">
+                    <i class="fas fa-trophy"></i>
+                </div>
+            {% elif resultat.appreciation == 'bien' or resultat.appreciation == 'assez_bien' %}
+                <div class="resultat-icon text-warning">
+                    <i class="fas fa-medal"></i>
+                </div>
+            {% elif resultat.appreciation == 'passable' %}
+                <div class="resultat-icon text-info">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            {% else %}
+                <div class="resultat-icon text-danger">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            {% endif %}
+            
+            <h2 class="text-primary">
+                {% if is_instructeur_view %}
+                    Détails du Résultat
+                {% else %}
+                    Test Terminé !
+                {% endif %}
+            </h2>
+            <p class="lead">{{ resultat.test.titre }}</p>
+            {% if is_instructeur_view %}
+                <p class="text-muted">
+                    <i class="fas fa-user-graduate me-1"></i>
+                    {{ resultat.apprenant.first_name }} {{ resultat.apprenant.last_name }} 
+                    ({{ resultat.apprenant.email }})
+                </p>
+            {% endif %}
+        </div>
+        
+        <!-- Note principale -->
+        <div class="note-principale text-{{ couleur_appreciation }}">
+            {{ resultat.note_sur_20|floatformat:1 }}/20
+        </div>
+        
+        <!-- Barre de progression -->
+        <div class="progress progress-custom">
+            <div class="progress-bar bg-{{ couleur_appreciation }}" 
+                 role="progressbar" 
+                 style="width: {{ pourcentage|floatformat:0 }}%"
+                 aria-valuenow="{{ pourcentage|floatformat:0 }}" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+                {{ pourcentage|floatformat:1 }}%
+            </div>
+        </div>
+        
+        <!-- Badge d'appréciation -->
+        <div class="appreciation-badge badge bg-{{ couleur_appreciation }}">
+            {% if resultat.appreciation == 'excellent' %}
+                Excellent
+            {% elif resultat.appreciation == 'tres_bien' %}
+                Très bien
+            {% elif resultat.appreciation == 'bien' %}
+                Bien
+            {% elif resultat.appreciation == 'assez_bien' %}
+                Assez bien
+            {% elif resultat.appreciation == 'passable' %}
+                Passable
+            {% else %}
+                Insuffisant
+            {% endif %}
+        </div>
+        
+        <!-- Détails du score -->
+        <div class="details-score">
+            <h5><i class="fas fa-chart-pie me-2"></i>Détails du Score</h5>
+            <div class="score-row">
+                <span><strong>Points obtenus :</strong></span>
+                <span>{{ resultat.score|floatformat:1 }}</span>
+            </div>
+            <div class="score-row">
+                <span><strong>Total possible :</strong></span>
+                <span>{{ resultat.test.bareme|floatformat:1 }}</span>
+            </div>
+            <div class="score-row">
+                <span><strong>Pourcentage :</strong></span>
+                <span>{{ pourcentage|floatformat:1 }}%</span>
+            </div>
+            <div class="score-row">
+                <span><strong>Temps écoulé :</strong></span>
+                <span>{{ resultat.temps_passe|default:resultat.test.duree }} minutes</span>
+            </div>
+            <div class="score-row">
+                <span><strong>Date de passage :</strong></span>
+                <span>{{ resultat.date_passation|date:"d/m/Y à H:i" }}</span>
+            </div>
+        </div>
+        
+        <!-- Liste détaillée des questions et réponses -->
+        {% if details_session.details_reponses %}
+        <div class="mt-4">
+            <h5 class="mb-3"><i class="fas fa-list me-2"></i>Correction détaillée</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 40%;">Question</th>
+                            <th>Pondération</th>
+                            {% if is_instructeur_view %}
+                                <th>Réponse apprenant</th>
+                            {% else %}
+                                <th>Votre réponse</th>
+                            {% endif %}
+                            <th>Bonne réponse</th>
+                            <th>Score obtenu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in details_session.details_reponses %}
+                        <tr>
+                            <td>{{ detail.question_enonce|default:"Question" }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-info">{{ detail.points|floatformat:1 }} pts</span>
+                            </td>
+                            <td>
+                                {% if detail.reponse_utilisateur %}
+                                    {{ detail.reponse_utilisateur }}
+                                {% else %}
+                                    <span class="text-muted">Non répondu</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if detail.reponses_correctes %}
+                                    {% for bonne in detail.reponses_correctes %}
+                                        <span class="badge bg-success mb-1">{{ bonne }}</span>{% if not forloop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">Non défini</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {% if detail.correcte %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if detail.correcte %}{{ detail.points|floatformat:1 }}{% else %}0{% endif %}/{{ detail.points|floatformat:1 }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-4">
+                {% if is_instructeur_view %}
+                    <a href="{% url 'celica_web:resultats_apprenants' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour aux Résultats
+                    </a>
+                {% else %}
+                    <a href="{% url 'celica_web:apprenant_dashboard' %}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Retour au Tableau de Bord
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        <!-- Message d'encouragement -->
+        <div class="mt-3">
+            {% if resultat.appreciation == 'excellent' or resultat.appreciation == 'tres_bien' %}
+                <p class="text-success"><i class="fas fa-star me-1"></i><strong>Félicitations !</strong> Excellent travail !</p>
+            {% elif resultat.appreciation == 'bien' or resultat.appreciation == 'assez_bien' %}
+                <p class="text-warning"><i class="fas fa-thumbs-up me-1"></i><strong>Bonne performance !</strong> Continue comme ça !</p>
+            {% elif resultat.appreciation == 'passable' %}
+                <p class="text-info"><i class="fas fa-info-circle me-1"></i><strong>C'est passé !</strong> Tu peux encore t'améliorer.</p>
+            {% else %}
+                <p class="text-danger"><i class="fas fa-book me-1"></i><strong>Continue tes efforts !</strong> Révise et recommence.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animation d'apparition
+    $(document).ready(function() {
+        $('.resultat-container').hide().fadeIn(800);
+        
+        // Animation de la barre de progression
+        setTimeout(function() {
+            $('.progress-bar').css('width', '0%').animate({
+                width: '{{ pourcentage|floatformat:0 }}%'
+            }, 1500);
+        }, 500);
+    });
+</script>
+{% endblock %} 

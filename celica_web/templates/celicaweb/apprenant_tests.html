@@ -1,0 +1,95 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Tests Disponibles - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Tests Disponibles</h1>
+    <p class="text-center">Voici les tests que vous pouvez passer actuellement.</p>
+
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Liste des tests -->
+    {% if tests %}
+        <div class="row">
+            {% for test in tests %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100" style="transition: box-shadow 0.3s;">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ test.titre|default:'Test sans titre' }}</h5>
+                            <p class="card-text"><strong>Module :</strong> {{ test.module.intitule|default:'Non spécifié' }}</p>
+                            <p class="card-text"><strong>Durée :</strong> {{ test.duree }} minutes</p>
+                            {% if test.description %}
+                            <p class="card-text"><strong>Description :</strong> {{ test.description|truncatewords:10 }}</p>
+                            {% endif %}
+                            <p class="card-text"><strong>Questions :</strong> {{ test.questions.count }} question{{ test.questions.count|pluralize }}</p>
+                            
+                            <!-- Informations de planning -->
+                            {% if test.planning %}
+                                {% if test.is_accessible %}
+                                    <div class="alert alert-success p-2 mt-2" style="font-size: 0.9em;" data-persistent="true">
+                                        <small>
+                                            <strong>✅ Test accessible</strong><br>
+                                            <strong>📅 Planning :</strong> 
+                                            Du {{ test.planning.date_debut|date:"d/m/Y H:i" }} 
+                                            au {{ test.planning.date_fin|date:"d/m/Y H:i" }}
+                                            {% if test.planning.lieu %}
+                                            <br><strong>📍 Lieu :</strong> {{ test.planning.lieu }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    
+                                    <a href="{% url 'celica_web:passer_test' test_id=test.id %}" class="btn btn-success w-100 mt-2">
+                                        <i class="fas fa-play me-2"></i>Passer le test
+                                    </a>
+                                {% else %}
+                                    <div class="alert alert-warning p-2 mt-2" style="font-size: 0.9em;" data-persistent="true">
+                                        <small>
+                                            <strong>⏰ Test planifié</strong><br>
+                                            <strong>📅 Planning :</strong> 
+                                            Du {{ test.planning.date_debut|date:"d/m/Y H:i" }} 
+                                            au {{ test.planning.date_fin|date:"d/m/Y H:i" }}
+                                            {% if test.planning.lieu %}
+                                            <br><strong>📍 Lieu :</strong> {{ test.planning.lieu }}
+                                            {% endif %}
+                                            <br><strong>🕐 Accessible à partir de :</strong> {{ test.planning.date_debut|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    
+                                    <button class="btn btn-secondary w-100 mt-2" disabled>
+                                        <i class="fas fa-clock me-2"></i>Test non accessible
+                                    </button>
+                                {% endif %}
+                            {% else %}
+                                <div class="alert alert-info p-2 mt-2" style="font-size: 0.9em;" data-persistent="true">
+                                    <small>
+                                        <strong>📅 Planning :</strong> Aucun planning défini
+                                    </small>
+                                </div>
+                                
+                                <button class="btn btn-secondary w-100 mt-2" disabled>
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Pas de planning
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted text-center">Aucun test disponible pour le moment.</p>
+    {% endif %}
+
+    <!-- Bouton de retour -->
+    <div class="text-center mt-4">
+        <a href="{% url 'celica_web:apprenant_dashboard' %}" class="btn btn-primary">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

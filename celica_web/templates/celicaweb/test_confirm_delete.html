@@ -1,0 +1,37 @@
+{% extends 'celicaweb/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Confirmer la suppression du test" %} - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="fas fa-trash-alt me-2"></i>{% trans "Confirmer la suppression du test" %}
+    </h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" aria-live="assertive">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans 'Fermer' %}"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="alert alert-warning" role="alert">
+        <p>{% trans "Êtes-vous sûr de vouloir supprimer le test" %} <strong>{{ test.titre }}</strong> ? {% trans "Cette action est irréversible." %}</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="text-center">
+            <button type="submit" class="btn btn-danger" aria-label="{% trans 'Confirmer la suppression' %}">
+                <i class="fas fa-trash-alt me-2"></i>{% trans "Supprimer" %}
+            </button>
+            <a href="{% url 'celica_web:test_list' %}" class="btn btn-secondary" aria-label="{% trans 'Annuler la suppression' %}">
+                <i class="fas fa-times me-2"></i>{% trans "Annuler" %}
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

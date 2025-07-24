@@ -1,0 +1,553 @@
+{% extends 'celicaweb/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Gestion des Questions - CelicaWeb" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #dee2e6;
+    }
+    
+    .question-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .question-card.qcm {
+        border-left-color: #17a2b8;
+    }
+    
+    .question-card.qrl {
+        border-left-color: #ffc107;
+    }
+    
+    .enonce-preview {
+        max-height: 3.6em;
+        overflow: hidden;
+        line-height: 1.2em;
+        position: relative;
+    }
+    
+    .enonce-preview::after {
+        content: '...';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: white;
+        padding-left: 20px;
+    }
+    
+    .stats-badge {
+        font-size: 0.75em;
+    }
+    
+    .action-buttons {
+        gap: 0.5rem;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .filter-section .col-md-4,
+    .filter-section .col-md-3,
+    .filter-section .col-md-2 {
+        margin-bottom: 1rem;
+    }
+    
+    .search-box {
+        position: relative;
+    }
+    
+    .search-box .fas {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    
+    .search-box input {
+        padding-left: 45px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-question-circle me-2 text-primary"></i>
+                {% trans "Gestion des Questions" %}
+            </h2>
+            <p class="text-muted mb-0">{% trans "Gérez vos questions d'évaluation" %}</p>
+        </div>
+        <div>
+            <a href="{% url 'celica_web:question_form' %}" class="btn btn-success me-2">
+                <i class="fas fa-plus me-2"></i>{% trans "Nouvelle Question" %}
+            </a>
+            <a href="{% url 'celica_web:nettoyer_doublons_questions' %}" class="btn btn-warning">
+                <i class="fas fa-broom me-2"></i>{% trans "Nettoyer doublons" %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message|safe }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Section de filtrage et recherche -->
+    <div class="filter-section">
+        <form method="get" class="row align-items-end g-3">
+            <div class="col-md-4">
+                <label for="search_question" class="form-label">{% trans "Rechercher" %}</label>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search_question" name="search" class="form-control" 
+                           placeholder="{% trans 'Rechercher par énoncé...' %}" value="{{ search_query }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="filter_type" class="form-label">{% trans "Type de question" %}</label>
+                <select id="filter_type" name="type" class="form-control">
+                    <option value="">{% trans "Tous les types" %}</option>
+                    <option value="QCM" {% if selected_type == 'QCM' %}selected{% endif %}>{% trans "QCM" %}</option>
+                    <option value="QRL" {% if selected_type == 'QRL' %}selected{% endif %}>{% trans "QRL" %}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filter_module" class="form-label">{% trans "Module" %}</label>
+                <select id="filter_module" name="module" class="form-control">
+                    <option value="">{% trans "Tous les modules" %}</option>
+                    {% for module in modules %}
+                        <option value="{{ module.id }}" {% if selected_module == module.id|stringformat:"s" %}selected{% endif %}>
+                            {{ module.intitule }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <div class="d-flex w-100 gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill form-control d-flex align-items-center justify-content-center">
+                        <i class="fas fa-search me-1"></i>{% trans "Filtrer" %}
+                    </button>
+                    <a href="{% url 'celica_web:question_list' %}" class="btn btn-outline-secondary flex-fill form-control d-flex align-items-center justify-content-center">
+                        <i class="fas fa-times me-1"></i>{% trans "Réinitialiser" %}
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if questions %}
+        <!-- Statistiques -->
+        <div class="card mb-4 bg-light">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <h4 class="text-primary mb-1">{{ questions|length }}</h4>
+                        <small class="text-muted">{% trans "Questions affichées" %}</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-success mb-1">{{ total_questions }}</h4>
+                        <small class="text-muted">{% trans "Total des questions" %}</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-info mb-1">{{ qcm_count }}</h4>
+                        <small class="text-muted">{% trans "QCM" %}</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-warning mb-1">{{ qrl_count }}</h4>
+                        <small class="text-muted">{% trans "QRL" %}</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-secondary mb-1">{{ modules|length }}</h4>
+                        <small class="text-muted">{% trans "Modules" %}</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-dark mb-1" id="selected_count">0</h4>
+                        <small class="text-muted">{% trans "Sélectionnées" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions en lot -->
+        <div class="card mb-4" id="bulk_actions" style="display: none;">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h6 class="mb-0">
+                            <i class="fas fa-check-square me-2"></i>
+                            <span id="bulk_selected_text">0 questions sélectionnées</span>
+                        </h6>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="button" id="select_all" class="btn btn-sm btn-outline-primary me-2">
+                            <i class="fas fa-check-double me-1"></i>{% trans "Tout sélectionner" %}
+                        </button>
+                        <button type="button" id="deselect_all" class="btn btn-sm btn-outline-secondary me-2">
+                            <i class="fas fa-square me-1"></i>{% trans "Tout désélectionner" %}
+                        </button>
+                        <button type="button" id="bulk_delete" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash me-1"></i>{% trans "Supprimer sélectionnées" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des questions -->
+        <form method="post" action="{% url 'celica_web:question_list' %}" id="questions_form">
+            {% csrf_token %}
+            <div class="row" id="questions_container">
+                {% for question in questions %}
+                <div class="col-md-6 mb-4 question-item" 
+                     data-type="{{ question.type_question }}" 
+                     data-module="{% if question.module %}{{ question.module.intitule }}{% elif question.test and question.test.module %}{{ question.test.module.intitule }}{% else %}Non spécifié{% endif %}"
+                     data-enonce="{{ question.enonce|lower }}">
+                    <div class="card question-card {{ question.type_question|lower }}">
+                        <div class="card-header d-flex justify-content-between align-items-start">
+                            <div class="form-check">
+                                <input type="checkbox" name="selected_questions" value="{{ question.id }}" 
+                                       class="form-check-input question-checkbox" id="q_{{ question.id }}">
+                                <label class="form-check-label fw-bold" for="q_{{ question.id }}">
+                                    <span class="badge bg-{% if question.type_question == 'QCM' %}info{% else %}warning{% endif %} me-2">
+                                        {{ question.type_question }}
+                                    </span>
+                                    {% trans "Question" %} #{{ question.id }}
+                                </label>
+                            </div>
+                            <span class="badge bg-light text-dark stats-badge">
+                                {% if question.type_question == 'QCM' %}
+                                    {% if question.reponses %}{{ question.reponses.count }}{% else %}0{% endif %} {% trans "réponses" %}
+                                {% else %}
+                                    {% trans "Réponse libre" %}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <!-- Énoncé -->
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Énoncé" %}</h6>
+                                <div class="enonce-preview" title="{{ question.enonce }}">
+                                    {{ question.enonce }}
+                                </div>
+                            </div>
+
+                            <!-- Informations -->
+                            <div class="row text-center mb-3">
+                                {% if user.is_superuser %}
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">{% trans "Module" %}</small>
+                                        <strong class="text-primary">
+                                            {% if question.module %}
+                                                {{ question.module.intitule }}
+                                            {% elif question.test and question.test.module %}
+                                                {{ question.test.module.intitule }}
+                                            {% else %}
+                                                Non spécifié
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">{% trans "Instructeur" %}</small>
+                                        <strong class="text-info">
+                                            {% if question.instructeur %}
+                                                {{ question.instructeur.first_name }} {{ question.instructeur.last_name }}
+                                            {% else %}
+                                                Non spécifié
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">{% trans "Points" %}</small>
+                                        <strong class="text-success">
+                                            {{ question.ponderation|default:"1.0" }}
+                                        </strong>
+                                    </div>
+                                {% else %}
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">{% trans "Module" %}</small>
+                                        <strong class="text-primary">
+                                            {% if question.module %}
+                                                {{ question.module.intitule }}
+                                            {% elif question.test and question.test.module %}
+                                                {{ question.test.module.intitule }}
+                                            {% else %}
+                                                Non spécifié
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">{% trans "Points" %}</small>
+                                        <strong class="text-success">
+                                            {{ question.ponderation|default:"1.0" }}
+                                        </strong>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Aperçu des réponses pour QCM -->
+                            {% if question.type_question == 'QCM' and question.reponses.all %}
+                                <div class="mb-3">
+                                    <small class="text-muted">{% trans "Réponses" %}:</small>
+                                    <div class="mt-1">
+                                        {% for reponse in question.reponses.all|slice:":2" %}
+                                            <div class="d-flex align-items-center mb-1">
+                                                <i class="fas {% if reponse.est_correcte %}fa-check-circle text-success{% else %}fa-circle text-muted{% endif %} me-2"></i>
+                                                <small class="{% if reponse.est_correcte %}text-success fw-bold{% endif %}">
+                                                    {{ reponse.texte|truncatechars:30 }}
+                                                </small>
+                                            </div>
+                                        {% endfor %}
+                                        {% if question.reponses.count > 2 %}
+                                            <small class="text-muted">+ {{ question.reponses.count|add:"-2" }} autres...</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center action-buttons">
+                                <small class="text-muted">
+                                    <i class="fas fa-signal me-1"></i>
+                                    {{ question.niveau_difficulte|default:"Moyen"|capfirst }}
+                                </small>
+                                <div class="d-flex">
+                                    <a href="{% url 'celica_web:question_form_edit' question.id %}" 
+                                       class="btn btn-sm btn-outline-warning me-2" 
+                                       title="{% trans 'Modifier' %}">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-question" 
+                                            data-question-id="{{ question.id }}" 
+                                            data-question-title="{{ question.enonce|truncatechars:30 }}"
+                                            title="{% trans 'Supprimer' %}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Actions du formulaire -->
+            <div class="text-center mt-4" id="form_actions" style="display: none;">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>{% trans "Ajouter au test" %}
+                </button>
+            </div>
+        </form>
+
+        <!-- Pagination -->
+        {% if questions.has_other_pages %}
+        <nav aria-label="{% trans 'Pagination des questions' %}" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if questions.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ questions.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in questions.paginator.page_range %}
+                    {% if questions.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > questions.number|add:'-3' and num < questions.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if questions.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ questions.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ questions.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_module %}&module={{ selected_module }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <!-- Message aucun résultat -->
+        <div id="no_results" class="text-center py-5" style="display: none;">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">{% trans "Aucune question trouvée" %}</h5>
+            <p class="text-muted">{% trans "Essayez de modifier vos critères de recherche" %}</p>
+        </div>
+
+    {% else %}
+        <!-- État vide -->
+        <div class="text-center py-5">
+            <i class="fas fa-question-circle fa-4x text-muted mb-4"></i>
+            {% if user.is_superuser %}
+                <h4 class="text-muted">{% trans "Aucune question disponible" %}</h4>
+                <p class="text-muted mb-4">{% trans "Il n'y a actuellement aucune question sur la plateforme" %}</p>
+            {% else %}
+                <h4 class="text-muted">{% trans "Aucune question créée" %}</h4>
+                <p class="text-muted mb-4">{% trans "Commencez par créer votre première question" %}</p>
+            {% endif %}
+            <a href="{% url 'celica_web:question_form' %}" class="btn btn-success btn-lg">
+                <i class="fas fa-plus me-2"></i>{% trans "Créer une question" %}
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Confirmer la suppression" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Êtes-vous sûr de vouloir supprimer cette question ?" %}</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong id="question_title_to_delete"></strong>
+                </div>
+                <p class="text-muted">{% trans "Cette action est irréversible." %}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    {% trans "Annuler" %}
+                </button>
+                <form method="POST" id="delete_form" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>{% trans "Supprimer" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables globales
+    const checkboxes = document.querySelectorAll('.question-checkbox');
+    const bulkActions = document.getElementById('bulk_actions');
+    const formActions = document.getElementById('form_actions');
+    const selectAllBtn = document.getElementById('select_all');
+    const deselectAllBtn = document.getElementById('deselect_all');
+
+    // Initialiser les compteurs
+    updateStats();
+
+    // Événements de sélection
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+
+    selectAllBtn?.addEventListener('click', selectAll);
+    deselectAllBtn?.addEventListener('click', deselectAll);
+
+    // Événements de suppression
+    document.querySelectorAll('.delete-question').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const questionId = this.dataset.questionId;
+            const questionTitle = this.dataset.questionTitle;
+            showDeleteModal(questionId, questionTitle);
+        });
+    });
+
+    // Fonction de mise à jour des statistiques
+    function updateStats() {
+        const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+
+        // Mettre à jour le compteur de sélection
+        document.getElementById('selected_count').textContent = selectedCount;
+
+        // Afficher/masquer les actions en lot
+        if (bulkActions) {
+            bulkActions.style.display = selectedCount > 0 ? 'block' : 'none';
+        }
+
+        if (formActions) {
+            formActions.style.display = selectedCount > 0 ? 'block' : 'none';
+        }
+
+        // Mettre à jour le texte de sélection
+        const bulkSelectedText = document.getElementById('bulk_selected_text');
+        if (bulkSelectedText) {
+            bulkSelectedText.textContent = `${selectedCount} question${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}`;
+        }
+    }
+
+    // Fonction de mise à jour de la sélection
+    function updateSelection() {
+        updateStats();
+    }
+
+    // Fonction pour tout sélectionner
+    function selectAll() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateStats();
+    }
+
+    // Fonction pour tout désélectionner
+    function deselectAll() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateStats();
+    }
+
+    // Fonction pour afficher la modal de suppression
+    function showDeleteModal(questionId, questionTitle) {
+        const modal = document.getElementById('deleteModal');
+        const questionTitleElement = document.getElementById('question_title_to_delete');
+        const deleteForm = document.getElementById('delete_form');
+
+        if (questionTitleElement) {
+            questionTitleElement.textContent = questionTitle;
+        }
+
+        if (deleteForm) {
+            deleteForm.action = `/question/delete/${questionId}/`;
+        }
+
+        if (modal) {
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+        }
+    }
+});
+</script>
+{% endblock %}

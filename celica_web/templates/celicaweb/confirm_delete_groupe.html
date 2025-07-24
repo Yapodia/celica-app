@@ -1,0 +1,16 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Confirmer la Suppression - Groupe - CELICAWeb{% endblock %}
+
+{% block content %}
+<h2>Confirmer la Suppression</h2>
+<div class="card p-3">
+    <p>Êtes-vous sûr de vouloir supprimer ce groupe ?</p>
+    <p>Groupe : {{ groupe.nom }}</p>
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Oui, Supprimer</button>
+        <a href="{% url 'celica_web:groupe_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+{% endblock %}

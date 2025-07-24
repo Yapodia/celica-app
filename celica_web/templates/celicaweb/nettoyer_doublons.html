@@ -1,0 +1,146 @@
+{% extends 'celicaweb/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Nettoyer les doublons de questions" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-broom me-2"></i>{% trans "Nettoyer les doublons de questions" %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>{% trans "Fonctionnalité de déduplication" %}</strong><br>
+                        {% trans "Cette fonctionnalité analyse la banque de questions et supprime les doublons automatiquement." %}
+                        <br><br>
+                        <strong>{% trans "Critères de détection :" %}</strong>
+                        <ul class="mb-0">
+                            <li>{% trans "Questions avec le même énoncé (similarité > 90%)" %}</li>
+                            <li>{% trans "Même module et même type de question" %}</li>
+                            <li>{% trans "Conservation de la question la plus ancienne" %}</li>
+                        </ul>
+                    </div>
+
+                    <!-- Statistiques actuelles -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{% trans "Total des questions" %}</h5>
+                                    <h2 class="text-primary">{{ total_questions }}</h2>
+                                    <small class="text-muted">{% trans "questions dans la banque" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">{% trans "Répartition par module" %}</h6>
+                                    {% if questions_par_module %}
+                                        <ul class="list-unstyled mb-0">
+                                            {% for module in questions_par_module %}
+                                                <li class="d-flex justify-content-between">
+                                                    <span>{{ module.module__intitule|default:"Sans module" }}</span>
+                                                    <span class="badge bg-secondary">{{ module.count }}</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="text-muted mb-0">{% trans "Aucune question trouvée" %}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bouton de nettoyage -->
+                    <div class="text-center">
+                        <form method="post" onsubmit="return confirm('{% trans 'Êtes-vous sûr de vouloir nettoyer les doublons ? Cette action est irréversible.' %}')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-broom me-2"></i>{% trans "Nettoyer les doublons" %}
+                            </button>
+                        </form>
+                        <small class="text-muted d-block mt-2">
+                            {% trans "Cette opération peut prendre quelques minutes selon le nombre de questions." %}
+                        </small>
+                    </div>
+
+                    <!-- Messages d'information -->
+                    {% if messages %}
+                        <div class="mt-4">
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Informations supplémentaires -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>{% trans "Sécurité et prévention" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>{% trans "Prévention des doublons" %}</h6>
+                            <ul class="small">
+                                <li>{% trans "Vérification automatique lors de la création" %}</li>
+                                <li>{% trans "Détection de similarité intelligente" %}</li>
+                                <li>{% trans "Suggestions de questions existantes" %}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{% trans "Nettoyage existant" %}</h6>
+                            <ul class="small">
+                                <li>{% trans "Analyse de toutes les questions de la banque" %}</li>
+                                <li>{% trans "Suppression des doublons détectés" %}</li>
+                                <li>{% trans "Conservation des questions les plus anciennes" %}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="text-center mt-4">
+                <a href="{% url 'celica_web:question_list' %}" class="btn btn-secondary me-2">
+                    <i class="fas fa-list me-1"></i>{% trans "Liste des questions" %}
+                </a>
+                <a href="{% url 'celica_web:instructeur_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-home me-1"></i>{% trans "Tableau de bord" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmation avant nettoyage
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const button = this.querySelector('button[type="submit"]');
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% trans "Nettoyage en cours..." %}';
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

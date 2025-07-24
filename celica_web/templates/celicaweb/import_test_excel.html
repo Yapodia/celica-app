@@ -1,0 +1,425 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Import de test depuis Excel" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .template-download {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    
+    .upload-zone {
+        border: 3px dashed #dee2e6;
+        border-radius: 15px;
+        padding: 3rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+        cursor: pointer;
+    }
+    
+    .upload-zone:hover {
+        border-color: #007bff;
+        background: #e3f2fd;
+    }
+    
+    .upload-zone.dragover {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .file-info {
+        background: #e9ecef;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+        display: none;
+    }
+    
+    .preview-section {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-top: 2rem;
+        display: none;
+    }
+    
+    .question-preview {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .reponse-correcte {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .reponse-incorrecte {
+        color: #6c757d;
+    }
+    
+    .loading-spinner {
+        display: none;
+    }
+    
+    .btn-template {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-template:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: white;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="import-container">
+                <!-- En-tête -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h3 mb-0">
+                            <i class="fas fa-file-excel text-success me-2"></i>
+                            {% trans "Import de test depuis Excel" %}
+                        </h1>
+                        <p class="text-muted mb-0">{% trans "Importez un test complet avec ses questions depuis un fichier Excel" %}</p>
+                    </div>
+                    <a href="{% url 'celica_web:test_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>{% trans "Retour" %}
+                    </a>
+                </div>
+
+                <!-- Section Template -->
+                <div class="template-download">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-2">
+                                <i class="fas fa-download me-2"></i>
+                                {% trans "Télécharger un template" %}
+                            </h4>
+                            <p class="mb-0 opacity-75">
+                                {% trans "Téléchargez un template Excel pour créer votre test. Le fichier contient des instructions détaillées et des exemples." %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'celica_web:download_excel_template' %}?example=false" 
+                               class="btn btn-template">
+                                <i class="fas fa-file me-2"></i>{% trans "Télécharger le template" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire d'import -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-upload me-2"></i>
+                            {% trans "Importer votre fichier Excel" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data" id="importForm">
+                            {% csrf_token %}
+                            
+                            <!-- Zone de dépôt de fichier -->
+                            <div class="upload-zone" id="uploadZone">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <h5>{% trans "Glissez-déposez votre fichier Excel ici" %}</h5>
+                                    <p class="text-muted mb-3">
+                                        {% trans "ou cliquez pour sélectionner un fichier" %}
+                                    </p>
+                                    <input type="file" id="excelFile" name="excel_file" 
+                                           accept=".xlsx,.xls" class="d-none" required>
+                                    <button type="button" class="btn btn-primary" onclick="document.getElementById('excelFile').click()">
+                                        <i class="fas fa-folder-open me-2"></i>{% trans "Sélectionner un fichier" %}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Informations sur le fichier -->
+                            <div class="file-info" id="fileInfo">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-file-excel text-success me-2"></i>
+                                    <div class="flex-grow-1">
+                                        <strong id="fileName"></strong>
+                                        <br>
+                                        <small class="text-muted" id="fileSize"></small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearFile()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Sélection du module -->
+                            <div class="form-group mt-4">
+                                <label for="moduleSelect" class="form-label">
+                                    <i class="fas fa-layer-group me-2"></i>{% trans "Module de destination" %}
+                                </label>
+                                <select class="form-select" id="moduleSelect" name="module_id" required>
+                                    <option value="">{% trans "Sélectionner un module..." %}</option>
+                                    {% for module in modules %}
+                                    <option value="{{ module.id }}">{{ module.intitule }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    {% trans "Le test sera créé dans ce module" %}
+                                </div>
+                            </div>
+
+                            <!-- Boutons d'action -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" class="btn btn-outline-info" id="previewBtn" style="display: none;">
+                                    <i class="fas fa-eye me-2"></i>{% trans "Prévisualiser" %}
+                                </button>
+                                <div>
+                                    <button type="button" class="btn btn-secondary me-2" onclick="clearForm()">
+                                        <i class="fas fa-undo me-2"></i>{% trans "Réinitialiser" %}
+                                    </button>
+                                    <button type="submit" class="btn btn-success" id="submitBtn" disabled>
+                                        <i class="fas fa-check me-2"></i>{% trans "Importer le test" %}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Section de prévisualisation -->
+                <div class="preview-section" id="previewSection">
+                    <h4 class="mb-3">
+                        <i class="fas fa-eye me-2"></i>{% trans "Prévisualisation" %}
+                    </h4>
+                    
+                    <!-- Informations du test -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "Informations du test" %}</h6>
+                        </div>
+                        <div class="card-body" id="testInfo">
+                            <!-- Rempli dynamiquement -->
+                        </div>
+                    </div>
+
+                    <!-- Questions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "Questions" %} (<span id="questionCount">0</span>)</h6>
+                        </div>
+                        <div class="card-body" id="questionsPreview">
+                            <!-- Rempli dynamiquement -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spinner de chargement -->
+                <div class="loading-spinner text-center mt-4" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">{% trans "Chargement..." %}</span>
+                    </div>
+                    <p class="mt-2 text-muted">{% trans "Traitement en cours..." %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('excelFile');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const submitBtn = document.getElementById('submitBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const moduleSelect = document.getElementById('moduleSelect');
+    const previewSection = document.getElementById('previewSection');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    // Gestion du drag & drop
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect();
+        }
+    });
+
+    // Gestion de la sélection de fichier
+    fileInput.addEventListener('change', handleFileSelect);
+
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (file) {
+            // Vérifier le type de fichier
+            if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+                alert('{% trans "Veuillez sélectionner un fichier Excel (.xlsx ou .xls)" %}');
+                clearFile();
+                return;
+            }
+
+            // Vérifier la taille (10 MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('{% trans "Le fichier est trop volumineux (maximum 10 MB)" %}');
+                clearFile();
+                return;
+            }
+
+            // Afficher les informations du fichier
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            previewBtn.style.display = 'inline-block';
+            
+            // Activer le bouton d'import si un module est sélectionné
+            checkFormValidity();
+        }
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        fileInfo.style.display = 'none';
+        previewBtn.style.display = 'none';
+        previewSection.style.display = 'none';
+        checkFormValidity();
+    }
+
+    function clearForm() {
+        clearFile();
+        moduleSelect.value = '';
+        checkFormValidity();
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function checkFormValidity() {
+        const hasFile = fileInput.files.length > 0;
+        const hasModule = moduleSelect.value !== '';
+        submitBtn.disabled = !(hasFile && hasModule);
+    }
+
+    // Vérifier la validité quand le module change
+    moduleSelect.addEventListener('change', checkFormValidity);
+
+    // Prévisualisation
+    previewBtn.addEventListener('click', function() {
+        if (!fileInput.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('excel_file', fileInput.files[0]);
+
+        loadingSpinner.style.display = 'block';
+        previewSection.style.display = 'none';
+
+        fetch('{% url "celica_web:preview_excel_import" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingSpinner.style.display = 'none';
+            
+            if (data.error) {
+                alert('Erreur: ' + data.error);
+                return;
+            }
+
+            // Afficher les informations du test
+            const testInfoHtml = Object.entries(data.test_info)
+                .map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`)
+                .join('');
+            document.getElementById('testInfo').innerHTML = testInfoHtml;
+
+            // Afficher les questions
+            const questionsHtml = data.questions.map((q, index) => `
+                <div class="question-preview">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">Question ${index + 1}</h6>
+                        <span class="badge bg-primary">${q.type}</span>
+                    </div>
+                    <p class="mb-2"><strong>Énoncé:</strong> ${q.enonce}</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small><strong>Niveau:</strong> ${q.niveau}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <small><strong>Points:</strong> ${q.points}</small>
+                        </div>
+                    </div>
+                    ${q.reponses.length > 0 ? `
+                        <div class="mt-2">
+                            <small><strong>Réponses:</strong></small>
+                            <ul class="list-unstyled mt-1">
+                                ${q.reponses.map(r => `
+                                    <li class="${r.correcte ? 'reponse-correcte' : 'reponse-incorrecte'}">
+                                        <i class="fas fa-${r.correcte ? 'check' : 'times'} me-1"></i>
+                                        ${r.texte}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+            
+            document.getElementById('questionsPreview').innerHTML = questionsHtml;
+            document.getElementById('questionCount').textContent = data.questions.length;
+            previewSection.style.display = 'block';
+        })
+        .catch(error => {
+            loadingSpinner.style.display = 'none';
+            alert('Erreur lors de la prévisualisation: ' + error.message);
+        });
+    });
+});
+</script>
+{% endblock %} 

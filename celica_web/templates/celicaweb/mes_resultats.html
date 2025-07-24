@@ -1,0 +1,310 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Mes Résultats - CelicaWeb{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        border-left: 4px solid #007bff;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .result-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .score-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .score-excellent { background-color: #28a745; color: white; }
+    .score-good { background-color: #17a2b8; color: white; }
+    .score-average { background-color: #ffc107; color: #212529; }
+    .score-poor { background-color: #dc3545; color: white; }
+
+    .filter-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn-filter {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-filter:hover {
+        background-color: #0056b3;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- En-tête avec statistiques -->
+    <div class="results-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">📊 Mes Résultats</h1>
+                <p class="mb-0">Consultez vos performances et suivez votre progression</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if stats.dernier_test %}
+                <small>Dernier test : {{ stats.dernier_test|date:"d/m/Y à H:i" }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques générales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_tests }}</div>
+                <div class="stat-label">Tests Passés</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.score_moyen|floatformat:1 }}%</div>
+                <div class="stat-label">Score Moyen</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.meilleur_score|floatformat:1 }}%</div>
+                <div class="stat-label">Meilleur Score</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">
+                    {% if stats.score_moyen >= 15 %}✅
+                    {% elif stats.score_moyen >= 10 %}⚠️
+                    {% else %}❌{% endif %}
+                </div>
+                <div class="stat-label">Statut Général</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filter-card">
+        <h5 class="mb-3">🔍 Filtrer mes résultats</h5>
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Module</label>
+                <select name="module" class="form-select">
+                    <option value="">Tous les modules</option>
+                    {% for module in modules %}
+                        <option value="{{ module.id }}" {% if selected_module == module.id|stringformat:"s" %}selected{% endif %}>
+                            {{ module.intitule }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Test</label>
+                <select name="test" class="form-select">
+                    <option value="">Tous les tests</option>
+                    {% for test in tests %}
+                        <option value="{{ test.id }}" {% if selected_test == test.id|stringformat:"s" %}selected{% endif %}>
+                            {{ test.titre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Date début</label>
+                <input type="date" name="date_debut" class="form-control" value="{{ date_debut }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Date fin</label>
+                <input type="date" name="date_fin" class="form-control" value="{{ date_fin }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-filter w-100">Filtrer</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des résultats -->
+    {% if page_obj %}
+        <div class="row">
+            {% for resultat, percent in page_obj %}
+            <div class="col-lg-6 mb-3">
+                <div class="result-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-2">{{ resultat.test.titre }}</h5>
+                            <div class="mb-2">
+                                <span class="badge bg-secondary">{{ resultat.test.module.intitule }}</span>
+                            </div>
+                            <small class="text-muted">
+                                📅 {{ resultat.date_passation|date:"d/m/Y à H:i" }}
+                                {% if resultat.temps_passe %}
+                                | ⏱️ {{ resultat.temps_passe }} min
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <span class="score-badge 
+                                    {% if resultat.score >= 16 %}score-excellent
+                                    {% elif resultat.score >= 12 %}score-good
+                                    {% elif resultat.score >= 8 %}score-average
+                                    {% else %}score-poor{% endif %}">
+                                    {{ percent|default_if_none:"0" }}%
+                                </span>
+                            </div>
+                            <div>
+                                <small class="text-muted">{{ resultat.appreciation|capfirst }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if resultat.note_sur_20 is not None %}
+                    <div class="mt-2">
+                        <small class="text-info">Note : {{ resultat.note_sur_20|floatformat:1 }}/20</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if resultat.commentaires %}
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <strong>Commentaire :</strong> {{ resultat.commentaires|truncatewords:15 }}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination harmonisée -->
+        {% if is_paginated %}
+        <div class="d-flex justify-content-center mt-4">
+            <nav aria-label="Pagination des résultats">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_test %}&test={{ selected_test }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Précédent
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_test %}&test={{ selected_test }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_module %}&module={{ selected_module }}{% endif %}{% if selected_test %}&test={{ selected_test }}{% endif %}{% if date_debut %}&date_debut={{ date_debut }}{% endif %}{% if date_fin %}&date_fin={{ date_fin }}{% endif %}">
+                                Suivant <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-chart-line"></i>
+            <h4>Aucun résultat trouvé</h4>
+            <p>
+                {% if selected_module or selected_test or date_debut or date_fin %}
+                    Aucun résultat ne correspond aux filtres sélectionnés.
+                    <br><a href="{% url 'celica_web:mes_resultats' %}" class="btn btn-outline-primary mt-2">Réinitialiser les filtres</a>
+                {% else %}
+                    Vous n'avez encore passé aucun test.
+                    <br><a href="{% url 'celica_web:apprenant_tests' %}" class="btn btn-primary mt-2">Passer un test</a>
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+
+    <!-- Bouton de retour -->
+    <div class="text-center mt-4">
+        <a href="{% url 'celica_web:apprenant_dashboard' %}" class="btn btn-outline-primary">
+            ← Retour au tableau de bord
+        </a>
+    </div></div>
+{% endblock %}

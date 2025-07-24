@@ -1,0 +1,164 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Créer une Notification - CELICAWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Créer une Notification</h2>
+
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Formulaire pour créer une notification -->
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label for="{{ form.titre.id_for_label }}" class="form-label">Titre * :</label>
+            {{ form.titre }}
+            {% if form.titre.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.titre.errors %}                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">Le titre doit contenir au moins 3 caractères.</small>
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.message.id_for_label }}" class="form-label">Message * :</label>            {{ form.message }}
+            {% if form.message.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.message.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">Le message doit contenir au moins 5 caractères.</small>
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.type_notice.id_for_label }}" class="form-label">Type de notification :</label>
+            {{ form.type_notice }}
+            {% if form.type_notice.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.type_notice.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.priorite.id_for_label }}" class="form-label">Priorité :</label>
+            {{ form.priorite }}
+            {% if form.priorite.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.priorite.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.utilisateur.id_for_label }}" class="form-label">Destinataire :</label>
+            {{ form.utilisateur }}
+            {% if form.utilisateur.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.utilisateur.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">Utilisateur qui recevra la notification (optionnel).</small>
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.module.id_for_label }}" class="form-label">Module :</label>
+            {{ form.module }}
+            {% if form.module.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.module.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">Module concerné par la notification (optionnel).</small>
+        </div>
+
+        <div class="mb-3">
+            <label for="{{ form.date_expiration.id_for_label }}" class="form-label">Date d'expiration :</label>
+            {{ form.date_expiration }}
+            {% if form.date_expiration.errors %}
+                <div class="invalid-feedback d-block">
+                    {% for error in form.date_expiration.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <small class="form-text text-muted">Date à laquelle la notification expirera (optionnel).</small>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
+        <a href="{% url 'celica_web:notification_list' %}" class="btn btn-secondary mt-3">Annuler</a>
+    </form>
+</div>
+
+<!-- JavaScript pour gérer les contraintes -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('form').addEventListener('submit', (e) => {
+            const titreInput = document.querySelector('input[name="titre"]');
+            const messageInput = document.querySelector('textarea[name="message"]');
+
+            // Validation du titre
+            if (!titreInput.value.trim()) {
+                e.preventDefault();
+                alert('Le champ titre est requis.');
+                titreInput.focus();
+                return;
+            }
+
+            if (titreInput.value.trim().length < 3) {
+                e.preventDefault();
+                alert('Le titre doit contenir au moins 3 caractères.');
+                titreInput.focus();
+                return;
+            }
+
+            // Validation du message
+            if (!messageInput.value.trim()) {
+                e.preventDefault();
+                alert('Le champ message est requis.');
+                messageInput.focus();
+                return;
+            }
+
+            if (messageInput.value.trim().length < 5) {
+                e.preventDefault();
+                alert('Le message doit contenir au moins 5 caractères.');
+                messageInput.focus();                return;
+            }
+
+            if (!e.target.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            e.target.classList.add('was-validated');
+        });
+    });
+</script>
+{% endblock %}

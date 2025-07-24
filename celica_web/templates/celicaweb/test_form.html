@@ -1,0 +1,1240 @@
+{% extends 'celicaweb/base.html' %}
+{% load i18n static %}
+{% block title %}{% trans "Gestion des Tests - CelicaWeb" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-type-badge {
+        font-size: 0.75rem;
+    }
+    .response-item {
+        transition: all 0.3s ease;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 15px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+    }
+    .response-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .response-item.correct {
+        border-left: 4px solid #28a745;
+        background: #f8fff9;
+    }
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    .card-header.bg-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    }
+    .card-header.bg-success {
+        background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+    }
+    .card-header.bg-warning {
+        background: linear-gradient(135deg, #ffc107, #e0a800) !important;
+    }
+    .card-header.bg-info {
+        background: linear-gradient(135deg, #17a2b8, #138496) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4" id="test-form-title">
+        {% if test %}
+            <i class="fas fa-edit me-2"></i>{% trans "Modifier le test" %}: {{ test.titre }}
+        {% else %}
+            <i class="fas fa-plus me-2"></i>{% trans "Créer un nouveau test" %}
+        {% endif %}
+    </h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" aria-live="assertive">
+                {{ message|safe }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans 'Fermer' %}"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if test and test.ponderation_status and not test.ponderation_status.est_valide %}
+        <div class="alert alert-{% if test.ponderation_status.somme_totale > test.bareme %}danger{% else %}warning{% endif %} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{% if test.ponderation_status.somme_totale > test.ponderation_status.barème %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+            <strong>{% trans "Attention à la pondération" %}:</strong> {{ test.ponderation_status.message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans 'Fermer' %}"></button>
+        </div>
+    {% endif %}
+
+    <div class="alert alert-info" role="alert">
+        <p><strong>{% trans "Instructions" %}:</strong> {% trans "Créez d'abord le test en remplissant les informations de base, puis ajoutez des questions. Pour les QCM, minimum 2 réponses avec au moins une correcte." %}</p>    </div>
+
+    {% if not modules %}
+        <div class="alert alert-warning" role="alert">
+            {% trans "Aucun module disponible. Veuillez créer un module avant de continuer." %}
+            <a href="{% url 'celica_web:module_form_new' %}" class="btn btn-primary btn-sm ms-2">{% trans "Créer un module" %}</a>
+        </div>
+    {% endif %}
+
+    <!-- Formulaire SÉPARÉ pour les informations du test -->
+    <form method="post" enctype="multipart/form-data" class="needs-validation" id="testInfoForm" aria-labelledby="test-form-title">
+        {% csrf_token %}
+
+        <!-- Section 1: Informations du test -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>{% trans "Informations du test" %}</h5>
+                <button type="submit" name="action" value="save_test" class="btn btn-light btn-sm">
+                    <i class="fas fa-save me-1"></i>{% trans "Sauvegarder" %}
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="titre" class="form-label">{% trans "Titre du test" %} <span class="text-danger">*</span></label>
+                            <input type="text" name="titre" id="titre" class="form-control" 
+                                   value="{% if test %}{{ test.titre }}{% endif %}" 
+                                   placeholder="{% trans 'Entrez le titre du test' %}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="module" class="form-label">{% trans "Module" %} <span class="text-danger">*</span></label>
+                            <select name="module" id="module" class="form-control" required>
+                                <option value="">{% trans "Sélectionnez un module" %}</option>
+                                {% for mod in modules %}
+                                    <option value="{{ mod.id }}" {% if test and test.module.id == mod.id %}selected{% endif %}>
+                                        {{ mod.intitule }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">{% trans "Description" %} <span class="text-muted">({% trans "facultatif" %})</span></label>
+                    <textarea name="description" id="description" class="form-control" rows="3" 
+                              placeholder="{% trans 'Description du test' %}">{% if test %}{{ test.description }}{% endif %}</textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="duree" class="form-label">{% trans "Durée (minutes)" %} <span class="text-danger">*</span></label>
+                            <input type="number" name="duree" id="duree" class="form-control" 
+                                   value="{% if test %}{{ test.duree }}{% else %}60{% endif %}" 
+                                   min="1" required placeholder="{% trans 'Ex: 60' %}">
+                            <div class="form-text">{% trans "Durée en minutes pour passer le test" %}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="bareme" class="form-label">{% trans "Barème total (points)" %} <span class="text-danger">*</span></label>
+                            <input type="number" name="bareme" id="bareme" class="form-control" 
+                                   value="{% if test %}{{ test.bareme|floatformat:'-1' }}{% else %}20{% endif %}" 
+                                   min="0.5" step="0.5" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Section 2: Questions existantes -->
+    {% if test and questions_existantes %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>{% trans "Questions du test" %}
+                <span class="badge bg-light text-dark ms-2">{{ questions_existantes|length }}</span>
+            </h5>
+            {% if test.ponderation_status %}
+                <div class="text-end">
+                    <small class="d-block">
+                        {% if test.ponderation_status.est_valide %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>{% trans "Pondération OK" %}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-{% if test.ponderation_status.somme_totale > test.ponderation_status.barème %}danger{% else %}warning{% endif %}">
+                                <i class="fas fa-{% if test.ponderation_status.somme_totale > test.ponderation_status.barème %}exclamation-triangle{% else %}info-circle{% endif %} me-1"></i>
+                                {% trans "Pondération" %}
+                            </span>
+                        {% endif %}
+                    </small>
+                    <small class="d-block text-light">
+                        {{ test.ponderation_status.somme_totale|floatformat:1 }}/{{ test.bareme|floatformat:1 }} {% trans "points" %}
+                    </small>
+                </div>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% for question in questions_existantes %}
+            <div class="card mb-3 question-card" data-question-id="{{ question.id }}">
+                <div class="card-header d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">
+                            <span class="badge bg-{% if question.type_question == 'QCM' %}info{% else %}warning{% endif %} me-2">
+                                {{ question.type_question }}
+                            </span>
+                            {% trans "Question" %} {{ forloop.counter }}
+                        </h6>
+                        <small class="text-muted">
+                            {% trans "Niveau" %}: {{ question.niveau_difficulte|capfirst }} | 
+                            {% trans "Points" %}: {{ question.ponderation }}
+                        </small>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="supprimerQuestion({{ question.id }}, {{ test.id }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3"><strong>{% trans "Énoncé" %}:</strong> {{ question.enonce }}</p>
+                    
+                    {% if question.type_question == 'QCM' %}
+                        <div class="row">
+                            {% for reponse in question.reponses.all %}
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" disabled 
+                                           {% if reponse.est_correcte %}checked{% endif %}>
+                                    <label class="form-check-label {% if reponse.est_correcte %}text-success fw-bold{% endif %}">
+                                        {{ reponse.texte }}
+                                        {% if reponse.est_correcte %}
+                                            <i class="fas fa-check text-success ms-1"></i>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-light">
+                            <i class="fas fa-edit me-2"></i>{% trans "Question à réponse libre" %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if question.explication %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <strong>{% trans "Explication" %}:</strong> {{ question.explication }}
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Formulaire SÉPARÉ pour les questions -->
+    {% if test %}
+    <form method="post" enctype="multipart/form-data" class="needs-validation" id="questionForm">
+        {% csrf_token %}
+        <input type="hidden" name="test_id" value="{{ test.id }}">
+
+        <!-- Section 3: Ajouter une question simple -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>{% trans "Ajouter une question simple" %}</h5>
+            </div>
+            <div class="card-body">
+                <!-- Formulaire pour nouvelle question -->
+                <div class="mb-4">
+                    <label for="enonce" class="form-label">{% trans "Énoncé de la question" %} <span class="text-danger">*</span></label>
+                    <textarea name="enonce" id="enonce" class="form-control" rows="3" 
+                              placeholder="{% trans 'Saisissez votre question ici' %}"></textarea>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label for="type_question" class="form-label">{% trans "Type de question" %} <span class="text-danger">*</span></label>
+                        <select name="type_question" id="type_question" class="form-control">
+                            <option value="">{% trans "Choisir le type..." %}</option>
+                            <option value="QCM">{% trans "QCM (Questionnaire à Choix Multiple)" %}</option>
+                            <option value="QRL">{% trans "QRL (Question à Réponse Libre)" %}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="niveau_difficulte" class="form-label">{% trans "Niveau de difficulté" %}</label>
+                        <select name="niveau_difficulte" id="niveau_difficulte" class="form-control">
+                            <option value="facile">{% trans "Facile" %}</option>
+                            <option value="moyen" selected>{% trans "Moyen" %}</option>
+                            <option value="difficile">{% trans "Difficile" %}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="ponderation" class="form-label">{% trans "Points attribués" %}</label>
+                        <input type="number" name="ponderation" id="ponderation" class="form-control" 
+                               value="1.0" min="0.5" step="0.5">
+                    </div>
+                </div>
+                
+                <!-- Explication optionnelle -->
+                <div class="mb-4">
+                    <label for="explication" class="form-label">{% trans "Explication" %} <span class="text-muted">({% trans "facultatif" %})</span></label>
+                    <textarea name="explication" id="explication" class="form-control" rows="2" 
+                              placeholder="{% trans 'Explication ou commentaire sur la question' %}"></textarea>
+                </div>
+                <!-- Image facultative -->
+                <div class="mb-4">
+                    <label for="image" class="form-label">
+                        <i class="fas fa-image me-1 text-secondary"></i>
+                        {% trans "Image" %} <span class="text-muted">({% trans "facultatif" %})</span>
+                    </label>
+                    <input type="file" name="image" id="image" class="form-control" accept="image/*">
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>{% trans "Image d'illustration (optionnel)" %}
+                    </small>
+                </div>
+                
+                <!-- Section réponses pour QCM -->
+                <div id="reponses_section" style="display: none;">
+                    <h6 class="mb-3">{% trans "Réponses possibles" %}</h6>
+                    <div id="new-responses-container">
+                        <!-- Les réponses seront ajoutées ici dynamiquement -->
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="ajouter_reponse" onclick="addResponse()">
+                        <i class="fas fa-plus me-1"></i>{% trans "Ajouter une réponse" %}
+                    </button>
+                </div>
+                
+                <!-- Options d'ajout -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="form-check d-flex align-items-start">
+                            <input type="checkbox" name="sauvegarder_banque" id="sauvegarder_banque" 
+                                   class="form-check-input mt-1" value="1" checked>
+                            <label class="form-check-label ms-2" for="sauvegarder_banque">
+                                <i class="fas fa-database me-1 text-primary"></i>
+                                <strong>{% trans "Sauvegarder aussi dans la banque de questions" %}</strong><br>
+                                <small class="text-muted">{% trans "Cette question sera disponible pour d'autres tests du même module" %}</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check d-flex align-items-start">
+                            <input type="radio" name="action_apres" id="continuer_ajouter" 
+                                   class="form-check-input mt-1" value="continuer" checked>
+                            <label class="form-check-label ms-2" for="continuer_ajouter">
+                                <i class="fas fa-plus-circle me-1 text-success"></i>
+                                <strong>{% trans "Continuer à ajouter des questions" %}</strong><br>
+                                <small class="text-muted">{% trans "Réinitialiser le formulaire après ajout" %}</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="text-center mt-4">
+                    <div class="btn-group" role="group">
+                        <button type="submit" name="action" value="add_question" class="btn btn-success btn-lg">
+                            <i class="fas fa-plus me-2"></i>{% trans "Ajouter la question" %}
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" onclick="reinitialiserFormulaire()">
+                            <i class="fas fa-undo me-2"></i>{% trans "Réinitialiser" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        {% trans "Vous devez d'abord sauvegarder les informations du test avant d'ajouter des questions." %}
+    </div>
+    {% endif %}
+
+    <!-- Section 4: Ajouter des questions existantes -->
+    {% if test %}
+    <form method="post" enctype="multipart/form-data" id="existingQuestionsForm">
+        {% csrf_token %}
+        <input type="hidden" name="test_id" value="{{ test.id }}">
+        
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-copy me-2"></i>{% trans "Ajouter des questions existantes" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Filtres et recherche -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="module_filter_existantes" class="form-label">{% trans "Module" %}</label>
+                        <select id="module_filter_existantes" class="form-control">
+                            <option value="tous">{% trans "Tous les modules" %}</option>
+                            {% for mod in modules %}
+                                <option value="{{ mod.id }}" {% if test.module.id == mod.id %}selected{% endif %}>
+                                    {{ mod.intitule }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="recherche_existantes" class="form-label">{% trans "Rechercher" %}</label>
+                        <input type="text" id="recherche_existantes" class="form-control" 
+                               placeholder="{% trans 'Rechercher dans les énoncés...' %}" 
+                               oninput="filtrerQuestions()">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="type_filter_existantes" class="form-label">{% trans "Type" %}</label>
+                        <select id="type_filter_existantes" class="form-control" onchange="filtrerQuestions()">
+                            <option value="">{% trans "Tous" %}</option>
+                            <option value="QCM">QCM</option>
+                            <option value="QRL">QRL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary w-100" onclick="chargerQuestionsExistantes()">
+                            <i class="fas fa-download me-1"></i>{% trans "Charger" %}
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Barre d'options avec statistiques -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="d-flex gap-3 align-items-center">
+                            <small class="text-muted">
+                                <strong>Total:</strong> <span id="stat_total">0</span>
+                            </small>
+                            <small class="text-muted">
+                                <strong>QCM:</strong> <span id="stat_qcm">0</span>
+                            </small>
+                            <small class="text-muted">
+                                <strong>QRL:</strong> <span id="stat_qrl">0</span>
+                            </small>
+                            <small class="text-success">
+                                <strong>Sélectionnées:</strong> <span id="stat_selectionnees">0</span>
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary" onclick="toggleToutesQuestions(true)">
+                                <i class="fas fa-check-square me-1"></i>{% trans "Tout sélectionner" %}
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleToutesQuestions(false)">
+                                <i class="fas fa-square me-1"></i>{% trans "Tout désélectionner" %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Loading -->
+                <div id="loading_questions" style="display: none;" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">{% trans "Chargement..." %}</span>
+                    </div>
+                    <p class="mt-2 text-muted">{% trans "Chargement des questions..." %}</p>
+                </div>
+                
+                <!-- Container pour les questions -->
+                <div id="questions_existantes_container" class="mb-3">
+                    <div class="alert alert-light text-center">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% trans "Cliquez sur 'Charger' pour afficher les questions disponibles." %}
+                    </div>
+                </div>
+                
+                <!-- Bouton d'ajout des questions sélectionnées -->
+                <div id="section_ajouter_questions" style="display: none;" class="text-center">
+                    <button type="submit" name="action" value="add_existing_questions" 
+                            class="btn btn-success btn-lg" id="btn_ajouter_questions" disabled>
+                        <i class="fas fa-plus me-2"></i>{% trans "Ajouter au test" %} 
+                        (<span id="count_selectionnees">0</span>)
+                    </button>
+                    <div id="questions_selectionnees_input">
+                        <!-- Les inputs cachés seront ajoutés ici dynamiquement -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+
+    <!-- Section 5: Tirage aléatoire de questions depuis la banque -->
+    {% if test %}
+    <form method="post" enctype="multipart/form-data" id="randomQuestionsForm">
+        {% csrf_token %}
+        <input type="hidden" name="test_id" value="{{ test.id }}">
+        
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-random me-2"></i>{% trans "Ajouter les questions par tirage aléatoire dans la banque" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>{% trans "Fonctionnement" %}:</strong> {% trans "Le système sélectionnera automatiquement des questions depuis la banque en vérifiant que la somme des pondérations ne dépasse pas le barème du test." %}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="nombre_questions_aleatoires" class="form-label">
+                                {% trans "Nombre de questions à tirer" %} <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" name="nombre_questions_aleatoires" id="nombre_questions_aleatoires" 
+                                   class="form-control" min="1" max="50" placeholder="Ex: 20" required>
+                            <div class="form-text">
+                                {% trans "Nombre maximum de questions à sélectionner aléatoirement" %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="module_filter_aleatoire" class="form-label">{% trans "Module" %}</label>
+                            <select name="module_filter_aleatoire" id="module_filter_aleatoire" class="form-control">
+                                <option value="tous">{% trans "Tous les modules" %}</option>
+                                {% for mod in modules %}
+                                    <option value="{{ mod.id }}" {% if test.module.id == mod.id %}selected{% endif %}>
+                                        {{ mod.intitule }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                {% trans "Filtrer par module (optionnel)" %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="niveau_filter_aleatoire" class="form-label">{% trans "Niveau de difficulté" %}</label>
+                            <select name="niveau_filter_aleatoire" id="niveau_filter_aleatoire" class="form-control">
+                                <option value="tous">{% trans "Tous les niveaux" %}</option>
+                                <option value="facile">{% trans "Facile" %}</option>
+                                <option value="moyen">{% trans "Moyen" %}</option>
+                                <option value="difficile">{% trans "Difficile" %}</option>
+                            </select>
+                            <div class="form-text">
+                                {% trans "Filtrer par difficulté (optionnel)" %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="type_question_filter_aleatoire" class="form-label">{% trans "Type de question" %}</label>
+                            <select name="type_question_filter_aleatoire" id="type_question_filter_aleatoire" class="form-control">
+                                <option value="tous">{% trans "Tous les types" %}</option>
+                                <option value="QCM">{% trans "QCM uniquement" %}</option>
+                                <option value="QRL">{% trans "QRL uniquement" %}</option>
+                            </select>
+                            <div class="form-text">
+                                {% trans "Filtrer par type de question (optionnel)" %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="ponderation_max_aleatoire" class="form-label">{% trans "Pondération maximum par question" %}</label>
+                            <input type="number" name="ponderation_max_aleatoire" id="ponderation_max_aleatoire" 
+                                   class="form-control" min="0.5" step="0.5" placeholder="{% trans 'Laisser vide pour aucune limite' %}">
+                            <div class="form-text">
+                                {% trans "Limite la pondération des questions sélectionnées (optionnel)" %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informations sur la pondération -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-light border">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <small class="text-muted">{% trans "Barème du test" %}:</small><br>
+                                    <strong class="text-primary">{{ test.bareme }} {% trans "points" %}</strong>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">{% trans "Pondération actuelle" %}:</small><br>
+                                    <strong class="text-info">
+                                        {% if test.ponderation_status %}
+                                            {{ test.ponderation_status.somme_totale|floatformat:1 }} {% trans "points" %}
+                                        {% else %}
+                                            0 {% trans "points" %}
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">{% trans "Points disponibles" %}:</small><br>
+                                    <strong class="text-success">
+                                        {% if test.ponderation_status %}
+                                            {{ test.ponderation_status.points_disponibles|floatformat:1 }} {% trans "points" %}
+                                        {% else %}
+                                            {{ test.bareme }} {% trans "points" %}
+                                        {% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Options avancées (collapsible) -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" 
+                            data-bs-target="#optionsAvanceesAleatoire" aria-expanded="false">
+                        <i class="fas fa-cog me-1"></i>{% trans "Options avancées" %}
+                    </button>
+                </div>
+                
+                <div class="collapse" id="optionsAvanceesAleatoire">
+                    <div class="card border-light bg-light">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" name="equilibrer_types" id="equilibrer_types" 
+                                               class="form-check-input" checked>
+                                        <label class="form-check-label" for="equilibrer_types">
+                                            <strong>{% trans "Équilibrer les types de questions" %}</strong><br>
+                                            <small class="text-muted">
+                                                {% trans "Tenter de répartir équitablement QCM et QRL" %}
+                                            </small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" name="equilibrer_difficultes" id="equilibrer_difficultes" 
+                                               class="form-check-input" checked>
+                                        <label class="form-check-label" for="equilibrer_difficultes">
+                                            <strong>{% trans "Équilibrer les niveaux de difficulté" %}</strong><br>
+                                            <small class="text-muted">
+                                                {% trans "Tenter de répartir les niveaux facile/moyen/difficile" %}
+                                            </small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" name="eviter_doublons" id="eviter_doublons" 
+                                               class="form-check-input" checked>
+                                        <label class="form-check-label" for="eviter_doublons">
+                                            <strong>{% trans "Éviter les doublons" %}</strong><br>
+                                            <small class="text-muted">
+                                                {% trans "Ne pas sélectionner des questions déjà dans le test" %}
+                                            </small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" name="optimiser_bareme" id="optimiser_bareme" 
+                                               class="form-check-input" checked>
+                                        <label class="form-check-label" for="optimiser_bareme">
+                                            <strong>{% trans "Optimiser pour le barème" %}</strong><br>
+                                            <small class="text-muted">
+                                                {% trans "Essayer de se rapprocher le plus possible du barème total" %}
+                                            </small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="text-center mt-4">
+                    <div class="btn-group" role="group">
+                        <button type="submit" name="action" value="add_random_questions" 
+                                class="btn btn-warning btn-lg" id="btn_tirer_questions">
+                            <i class="fas fa-random me-2"></i>{% trans "Effectuer le tirage aléatoire" %}
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" onclick="resetRandomForm()">
+                            <i class="fas fa-undo me-2"></i>{% trans "Réinitialiser" %}
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {% trans "Les questions seront automatiquement copiées dans votre test" %}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Zone d'aperçu du tirage (masquée par défaut) -->
+                <div id="apercu_tirage" style="display: none;" class="mt-4">
+                    <hr>
+                    <h6><i class="fas fa-eye me-2"></i>{% trans "Aperçu du tirage aléatoire" %}</h6>
+                    <div id="questions_tirage_container">
+                        <!-- Les questions tirées seront affichées ici -->
+                    </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-success" onclick="confirmerTirage()">
+                            <i class="fas fa-check me-2"></i>{% trans "Confirmer l'ajout" %}
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="relancerTirage()">
+                            <i class="fas fa-redo me-2"></i>{% trans "Relancer le tirage" %}
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="annulerTirage()">
+                            <i class="fas fa-times me-2"></i>{% trans "Annuler" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+
+    <!-- Section 6: Import de questions depuis fichier -->
+    {% if test %}
+    <form method="post" enctype="multipart/form-data" id="importQuestionsForm">
+        {% csrf_token %}
+        <input type="hidden" name="test_id" value="{{ test.id }}">
+        
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-upload me-2"></i>{% trans "Importer des questions depuis un fichier" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>{% trans "Format attendu" %}</h6>
+                    <p class="mb-2">{% trans "Le fichier doit être au format CSV ou TXT avec la structure suivante :" %}</p>
+                    <ul class="mb-2">
+                        <li><strong>{% trans "Ligne 1" %}:</strong> {% trans "Type de question (QCM ou QRL)" %}</li>
+                        <li><strong>{% trans "Ligne 2" %}:</strong> {% trans "Énoncé de la question" %}</li>
+                        <li><strong>{% trans "Ligne 3" %}:</strong> {% trans "Niveau de difficulté (facile, moyen, difficile)" %}</li>
+                        <li><strong>{% trans "Ligne 4" %}:</strong> {% trans "Points attribués (nombre décimal)" %}</li>
+                        <li><strong>{% trans "Ligne 5" %}:</strong> {% trans "Explication (facultatif)" %}</li>
+                        <li><strong>{% trans "Lignes suivantes" %}:</strong> {% trans "Réponses (pour QCM uniquement)" %}</li>
+                    </ul>
+                    <small class="text-muted">
+                        {% trans "Pour les QCM, chaque réponse doit être précédée de '✓' si elle est correcte, '○' sinon." %}
+                    </small>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="fichier_questions" class="form-label">
+                                {% trans "Sélectionner le fichier" %} <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" name="fichier_questions" id="fichier_questions" 
+                                   class="form-control" accept=".csv,.txt,.json" required>
+                            <div class="form-text">
+                                {% trans "Formats acceptés : CSV, TXT, JSON (max 10 MB)" %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="format_fichier" class="form-label">{% trans "Format du fichier" %}</label>
+                            <select name="format_fichier" id="format_fichier" class="form-control">
+                                <option value="auto">{% trans "Détection automatique" %}</option>
+                                <option value="csv">CSV (séparateur virgule)</option>
+                                <option value="csv_semicolon">CSV (séparateur point-virgule)</option>
+                                <option value="txt">TXT (ligne par ligne)</option>
+                                <option value="json">JSON structuré</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input type="checkbox" name="valider_import" id="valider_import" 
+                                   class="form-check-input" checked>
+                            <label class="form-check-label" for="valider_import">
+                                <i class="fas fa-check-circle me-1 text-success"></i>
+                                <strong>{% trans "Valider les questions avant import" %}</strong><br>
+                                <small class="text-muted">
+                                    {% trans "Afficher un aperçu avant d'ajouter définitivement au test" %}
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input type="checkbox" name="ignorer_erreurs" id="ignorer_erreurs" 
+                                   class="form-check-input">
+                            <label class="form-check-label" for="ignorer_erreurs">
+                                <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+                                <strong>{% trans "Ignorer les questions avec erreurs" %}</strong><br>
+                                <small class="text-muted">
+                                    {% trans "Continuer l'import même si certaines questions sont mal formatées" %}
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Exemple de format -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="collapse" 
+                            data-bs-target="#exempleFormat" aria-expanded="false">
+                        <i class="fas fa-eye me-1"></i>{% trans "Voir un exemple de format" %}
+                    </button>
+                </div>
+                
+                <div class="collapse" id="exempleFormat">
+                    <div class="card border-info">
+                        <div class="card-header bg-light">
+                            <small class="text-muted">{% trans "Exemple de fichier CSV :" %}</small>
+                        </div>
+                        <div class="card-body">
+                            <pre class="mb-0"><code>QCM
+Quelle est la capitale de la France ?
+moyen
+2.0
+Paris est la capitale et la plus grande ville de France
+✓ Paris
+○ Lyon  
+○ Marseille
+○ Toulouse
+
+QRL
+Expliquez le concept de l'héritage en programmation orientée objet
+difficile
+3.0
+L'héritage permet de créer de nouvelles classes basées sur des classes existantes</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="text-center mt-4">
+                    <div class="btn-group" role="group">
+                        <button type="submit" name="action" value="import_questions" class="btn btn-primary btn-lg">
+                            <i class="fas fa-upload me-2"></i>{% trans "Importer les questions" %}
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-lg" onclick="resetImportForm()">
+                            <i class="fas fa-undo me-2"></i>{% trans "Réinitialiser" %}
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Zone d'aperçu des questions importées -->
+                <div id="apercu_import" style="display: none;" class="mt-4">
+                    <hr>
+                    <h6><i class="fas fa-eye me-2"></i>{% trans "Aperçu des questions à importer" %}</h6>
+                    <div id="questions_apercu_container">
+                        <!-- Les questions en aperçu seront affichées ici -->
+                    </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-success" onclick="confirmerImport()">
+                            <i class="fas fa-check me-2"></i>{% trans "Confirmer l'import" %}
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="annulerImport()">
+                            <i class="fas fa-times me-2"></i>{% trans "Annuler" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+
+    <!-- Section 6: Actions finales -->
+    {% if test %}
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-cogs me-2"></i>{% trans "Actions et aperçu" %}
+            </h5>
+            {% if questions_existantes %}
+                <span class="badge bg-light text-dark">
+                    {{ questions_existantes|length }} question(s) | {{ test.duree }} min | {{ test.bareme }} pts
+                </span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <p class="mb-2"><strong>{{ test.titre }}</strong></p>
+                    <small class="text-muted">
+                        {% if test.description %}{{ test.description|truncatewords:15 }}{% endif %}
+                    </small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'celica_web:test_preview' test.id %}" 
+                           class="btn btn-outline-info" target="_blank">
+                            <i class="fas fa-eye me-1"></i>{% trans "Aperçu" %}
+                        </a>
+                        <button type="submit" form="testInfoForm" name="action" value="save_test" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>{% trans "Sauvegarder" %}
+                        </button>
+                        <a href="{% url 'celica_web:test_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-1"></i>{% trans "Retour" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+/**
+ * JavaScript pour le formulaire de test
+ * Gestion des questions existantes, tirage aléatoire, etc.
+ */
+
+// Variables globales
+let questionsExistantes = [];
+let questionsSelectionnees = new Set();
+
+/**
+ * Charge les questions existantes depuis la banque
+ */
+function chargerQuestionsExistantes() {
+    console.log('=== Début de chargerQuestionsExistantes ===');
+    
+    const moduleId = document.getElementById('module_filter_existantes').value;
+    const testId = document.querySelector('input[name="test_id"]').value;
+    const loadingDiv = document.getElementById('loading_questions');
+    const containerDiv = document.getElementById('questions_existantes_container');
+    
+    console.log('Paramètres:', { moduleId, testId });
+    console.log('Éléments trouvés:', { 
+        moduleFilter: !!document.getElementById('module_filter_existantes'),
+        testIdInput: !!document.querySelector('input[name="test_id"]'),
+        loadingDiv: !!loadingDiv,
+        containerDiv: !!containerDiv
+    });
+    
+    // Afficher le loading
+    loadingDiv.style.display = 'block';
+    containerDiv.innerHTML = '';
+    
+    // Construire l'URL avec les paramètres
+    const url = `/ajax/questions-existantes/?module_id=${moduleId}&test_id=${testId}`;
+    console.log('URL de requête:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('Réponse reçue:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Données reçues:', data);
+            if (data.success) {
+                questionsExistantes = data.questions;
+                console.log('Questions chargées:', questionsExistantes.length);
+                afficherQuestionsExistantes();
+                mettreAJourStatistiques();
+            } else {
+                console.error('Erreur dans la réponse:', data.error);
+                afficherErreur(data.error || 'Erreur lors du chargement des questions');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            afficherErreur('Erreur de connexion lors du chargement des questions: ' + error.message);
+        })
+        .finally(() => {
+            loadingDiv.style.display = 'none';
+            console.log('=== Fin de chargerQuestionsExistantes ===');
+        });
+}
+
+/**
+ * Affiche les questions existantes dans le container
+ */
+function afficherQuestionsExistantes() {
+    const container = document.getElementById('questions_existantes_container');
+    
+    if (questionsExistantes.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Aucune question disponible pour ce module.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    
+    questionsExistantes.forEach((question, index) => {
+        const questionId = question.id;
+        const isSelected = questionsSelectionnees.has(questionId);
+        
+        html += `
+            <div class="col-12 mb-3">
+                <div class="card question-card ${isSelected ? 'border-primary' : ''}" data-question-id="${questionId}">
+                    <div class="card-body">
+                        <div class="row align-items-start">
+                            <div class="col-md-1">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input question-checkbox" 
+                                           id="question_${questionId}" value="${questionId}"
+                                           ${isSelected ? 'checked' : ''}
+                                           onchange="toggleQuestionSelection(${questionId})">
+                                    <label class="form-check-label" for="question_${questionId}"></label>
+                                </div>
+                            </div>
+                            <div class="col-md-11">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-1">${escapeHtml(question.enonce)}</h6>
+                                    <div class="badges">
+                                        <span class="badge bg-${getTypeBadgeColor(question.type_question)} me-1">
+                                            ${question.type_question}
+                                        </span>
+                                        <span class="badge bg-${getNiveauBadgeColor(question.niveau_difficulte)} me-1">
+                                            ${question.niveau_difficulte}
+                                        </span>
+                                        <span class="badge bg-info">
+                                            ${question.ponderation} pts
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="question-details">
+                                    <small class="text-muted">
+                                        <i class="fas fa-folder me-1"></i>${escapeHtml(question.module_nom)}
+                                    </small>
+                                </div>
+                                
+                                ${question.type_question === 'QCM' ? afficherReponsesQCM(question.reponses) : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Afficher la section d'ajout
+    document.getElementById('section_ajouter_questions').style.display = 'block';
+}
+
+/**
+ * Affiche les réponses pour une question QCM
+ */
+function afficherReponsesQCM(reponses) {
+    if (!reponses || reponses.length === 0) {
+        return '<div class="mt-2"><small class="text-muted">Aucune réponse définie</small></div>';
+    }
+    
+    let html = '<div class="mt-2"><small class="text-muted">Réponses :</small><ul class="list-unstyled ms-3">';
+    
+    reponses.forEach(reponse => {
+        const icon = reponse.est_correcte ? '✓' : '○';
+        const color = reponse.est_correcte ? 'text-success' : 'text-muted';
+        html += `<li class="${color}"><small>${icon} ${escapeHtml(reponse.texte)}</small></li>`;
+    });
+    
+    html += '</ul></div>';
+    return html;
+}
+
+/**
+ * Bascule la sélection d'une question
+ */
+function toggleQuestionSelection(questionId) {
+    if (questionsSelectionnees.has(questionId)) {
+        questionsSelectionnees.delete(questionId);
+    } else {
+        questionsSelectionnees.add(questionId);
+    }
+    
+    // Mettre à jour l'apparence de la carte
+    const card = document.querySelector(`[data-question-id="${questionId}"]`);
+    if (card) {
+        if (questionsSelectionnees.has(questionId)) {
+            card.classList.add('border-primary');
+        } else {
+            card.classList.remove('border-primary');
+        }
+    }
+    
+    mettreAJourStatistiques();
+    mettreAJourBoutonAjout();
+}
+
+/**
+ * Met à jour les statistiques affichées
+ */
+function mettreAJourStatistiques() {
+    const total = questionsExistantes.length;
+    const qcm = questionsExistantes.filter(q => q.type_question === 'QCM').length;
+    const qrl = questionsExistantes.filter(q => q.type_question === 'QRL').length;
+    const selectionnees = questionsSelectionnees.size;
+    
+    document.getElementById('stat_total').textContent = total;
+    document.getElementById('stat_qcm').textContent = qcm;
+    document.getElementById('stat_qrl').textContent = qrl;
+    document.getElementById('stat_selectionnees').textContent = selectionnees;
+    document.getElementById('count_selectionnees').textContent = selectionnees;
+}
+
+/**
+ * Met à jour l'état du bouton d'ajout
+ */
+function mettreAJourBoutonAjout() {
+    const btn = document.getElementById('btn_ajouter_questions');
+    const inputsContainer = document.getElementById('questions_selectionnees_input');
+    
+    if (questionsSelectionnees.size > 0) {
+        btn.disabled = false;
+        
+        // Créer les inputs cachés pour les questions sélectionnées
+        inputsContainer.innerHTML = '';
+        questionsSelectionnees.forEach(questionId => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'questions_selectionnees';
+            input.value = questionId;
+            inputsContainer.appendChild(input);
+        });
+    } else {
+        btn.disabled = true;
+        inputsContainer.innerHTML = '';
+    }
+}
+
+/**
+ * Filtre les questions selon les critères
+ */
+function filtrerQuestions() {
+    const recherche = document.getElementById('recherche_existantes').value.toLowerCase();
+    const typeFilter = document.getElementById('type_filter_existantes').value;
+    
+    const cards = document.querySelectorAll('.question-card');
+    
+    cards.forEach(card => {
+        const questionId = card.dataset.questionId;
+        const question = questionsExistantes.find(q => q.id == questionId);
+        
+        if (!question) return;
+        
+        let visible = true;
+        
+        // Filtre par recherche
+        if (recherche && !question.enonce.toLowerCase().includes(recherche)) {
+            visible = false;
+        }
+        
+        // Filtre par type
+        if (typeFilter && question.type_question !== typeFilter) {
+            visible = false;
+        }
+        
+        card.style.display = visible ? 'block' : 'none';
+    });
+}
+
+/**
+ * Sélectionne/désélectionne toutes les questions
+ */
+function toggleToutesQuestions(selectAll) {
+    const checkboxes = document.querySelectorAll('.question-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        const questionId = parseInt(checkbox.value);
+        
+        if (selectAll) {
+            if (!checkbox.checked) {
+                checkbox.checked = true;
+                questionsSelectionnees.add(questionId);
+            }
+        } else {
+            if (checkbox.checked) {
+                checkbox.checked = false;
+                questionsSelectionnees.delete(questionId);
+            }
+        }
+    });
+    
+    // Mettre à jour l'apparence des cartes
+    questionsExistantes.forEach(question => {
+        const card = document.querySelector(`[data-question-id="${question.id}"]`);
+        if (card) {
+            if (questionsSelectionnees.has(question.id)) {
+                card.classList.add('border-primary');
+            } else {
+                card.classList.remove('border-primary');
+            }
+        }
+    });
+    
+    mettreAJourStatistiques();
+    mettreAJourBoutonAjout();
+}
+
+/**
+ * Affiche une erreur dans le container
+ */
+function afficherErreur(message) {
+    const container = document.getElementById('questions_existantes_container');
+    container.innerHTML = `
+        <div class="alert alert-danger text-center">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            ${escapeHtml(message)}
+        </div>
+    `;
+}
+
+/**
+ * Utilitaires
+ */
+function getTypeBadgeColor(type) {
+    return type === 'QCM' ? 'primary' : 'success';
+}
+
+function getNiveauBadgeColor(niveau) {
+    switch (niveau) {
+        case 'facile': return 'success';
+        case 'moyen': return 'warning';
+        case 'difficile': return 'danger';
+        default: return 'secondary';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les statistiques
+    mettreAJourStatistiques();
+    mettreAJourBoutonAjout();
+    
+    // Ajouter les event listeners pour les filtres
+    const rechercheInput = document.getElementById('recherche_existantes');
+    if (rechercheInput) {
+        rechercheInput.addEventListener('input', filtrerQuestions);
+    }
+    
+    const typeFilter = document.getElementById('type_filter_existantes');
+    if (typeFilter) {
+        typeFilter.addEventListener('change', filtrerQuestions);
+    }
+});
+</script>
+{% endblock %}
+
+{% endblock %}

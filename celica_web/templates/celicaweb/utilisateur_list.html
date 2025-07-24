@@ -1,0 +1,462 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Liste des Utilisateurs - CelicaWeb{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-card {
+        transition: transform 0.2s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        border-bottom: none;
+    }
+    
+    .search-form .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-users text-primary me-2"></i>
+                        Liste des Utilisateurs
+                    </h2>
+                    <p class="text-muted mb-0">Gestion et recherche des utilisateurs de la plateforme</p>
+                </div>
+                <div>
+                    <a href="{% url 'celica_web:utilisateur_add' %}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-1"></i>Ajouter un utilisateur
+                    </a>
+                    <a href="{% url 'celica_web:admin_dashboard' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-arrow-left me-1"></i>Retour au dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-1">{{ stats.total }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-users me-1"></i>Total utilisateurs
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-1">{{ stats.actifs }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-user-check me-1"></i>Utilisateurs actifs
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-secondary mb-1">{{ stats.inactifs }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-user-times me-1"></i>Utilisateurs inactifs
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-1">{{ stats.suspendus }}</h3>
+                    <small class="text-muted">
+                        <i class="fas fa-user-slash me-1"></i>Utilisateurs suspendus
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section de recherche -->
+    <div class="search-section">
+        <h5 class="mb-3">
+            <i class="fas fa-search me-2"></i>Rechercher des utilisateurs
+        </h5>
+        <form method="get" class="search-form">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Recherche</label>
+                    <input type="text" class="form-control" name="search" value="{{ search_query }}" 
+                           placeholder="Nom, prénom, email ou matricule...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Rôle</label>
+                    <select class="form-select" name="role">
+                        <option value="">Tous les rôles</option>
+                        {% for role_code, role_name in roles %}
+                            <option value="{{ role_code }}" {% if role_filter == role_code %}selected{% endif %}>
+                                {{ role_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Statut</label>
+                    <select class="form-select" name="statut">
+                        <option value="">Tous les statuts</option>
+                        {% for statut_code, statut_name in statuts %}
+                            <option value="{{ statut_code }}" {% if statut_filter == statut_code %}selected{% endif %}>
+                                {{ statut_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Rechercher
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% if search_query or role_filter or statut_filter %}
+            <div class="row mt-3">
+                <div class="col-12">
+                    <a href="{% url 'celica_web:gerer_utilisateurs' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>Réinitialiser les filtres
+                    </a>
+                    {% if search_query %}
+                        <span class="badge bg-info ms-2">Recherche: "{{ search_query }}"</span>
+                    {% endif %}
+                    {% if role_filter %}
+                        <span class="badge bg-primary ms-2">Rôle: {{ role_filter }}</span>
+                    {% endif %}
+                    {% if statut_filter %}
+                        <span class="badge bg-secondary ms-2">Statut: {{ statut_filter }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+
+
+    <!-- Liste des utilisateurs groupés par statut -->
+    <div class="row">
+    <!-- Utilisateurs Actifs -->
+    {% if utilisateurs_par_statut.actif %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+      <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-check me-2"></i>Utilisateurs Actifs ({{ utilisateurs_par_statut.actif|length }})
+                    </h5>
+      </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom complet</th>
+              <th>Email</th>
+                                    <th>Matricule</th>
+              <th>Rôle</th>
+                                    <th>Spécialité</th>
+                                    <th>Dernière connexion</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in utilisateurs_par_statut.actif %}
+            <tr>
+                                    <td>
+                                        <strong>{{ user.last_name }} {{ user.first_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <small>{{ user.email }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ user.matricule }}</span>
+                                    </td>
+                                    <td>
+                                        {% if user.role == 'admin' %}
+                                            <span class="badge bg-danger">{{ user.get_role_display }}</span>
+                                        {% elif user.role == 'instructeur' %}
+                                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ user.get_role_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ user.specialite|default:"-" }}</small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.last_login %}
+                                                {{ user.last_login|date:"d/m/Y H:i" }}
+                                            {% else %}
+                                                Jamais connecté
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'celica_web:utilisateur_edit' user_id=user.id %}" class="btn btn-outline-primary" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'celica_web:utilisateur_changer_mot_de_passe' user_id=user.id %}" class="btn btn-outline-info" title="Changer mot de passe">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                            <a href="{% url 'celica_web:utilisateur_delete' user_id=user.id %}" class="btn btn-outline-danger" title="Supprimer" 
+                                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+                    </div>
+                </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- Utilisateurs Inactifs -->
+    {% if utilisateurs_par_statut.inactif %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+      <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-times me-2"></i>Utilisateurs Inactifs ({{ utilisateurs_par_statut.inactif|length }})
+                    </h5>
+      </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom complet</th>
+              <th>Email</th>
+                                    <th>Matricule</th>
+              <th>Rôle</th>
+                                    <th>Spécialité</th>
+                                    <th>Dernière connexion</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in utilisateurs_par_statut.inactif %}
+            <tr>
+                                    <td>
+                                        <strong>{{ user.last_name }} {{ user.first_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <small>{{ user.email }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ user.matricule }}</span>
+                                    </td>
+                                    <td>
+                                        {% if user.role == 'admin' %}
+                                            <span class="badge bg-danger">{{ user.get_role_display }}</span>
+                                        {% elif user.role == 'instructeur' %}
+                                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ user.get_role_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ user.specialite|default:"-" }}</small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.last_login %}
+                                                {{ user.last_login|date:"d/m/Y H:i" }}
+                                            {% else %}
+                                                Jamais connecté
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'celica_web:utilisateur_edit' user_id=user.id %}" class="btn btn-outline-primary" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'celica_web:utilisateur_changer_mot_de_passe' user_id=user.id %}" class="btn btn-outline-info" title="Changer mot de passe">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                            <a href="{% url 'celica_web:utilisateur_delete' user_id=user.id %}" class="btn btn-outline-danger" title="Supprimer" 
+                                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+                    </div>
+                </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    <!-- Utilisateurs Suspendus -->
+    {% if utilisateurs_par_statut.suspendu %}
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-slash me-2"></i>Utilisateurs Suspendus ({{ utilisateurs_par_statut.suspendu|length }})
+                    </h5>
+      </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom complet</th>
+              <th>Email</th>
+                                    <th>Matricule</th>
+              <th>Rôle</th>
+                                    <th>Spécialité</th>
+                                    <th>Dernière connexion</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in utilisateurs_par_statut.suspendu %}
+            <tr>
+                                    <td>
+                                        <strong>{{ user.last_name }} {{ user.first_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <small>{{ user.email }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ user.matricule }}</span>
+                                    </td>
+                                    <td>
+                                        {% if user.role == 'admin' %}
+                                            <span class="badge bg-danger">{{ user.get_role_display }}</span>
+                                        {% elif user.role == 'instructeur' %}
+                                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ user.get_role_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ user.specialite|default:"-" }}</small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.last_login %}
+                                                {{ user.last_login|date:"d/m/Y H:i" }}
+                                            {% else %}
+                                                Jamais connecté
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'celica_web:utilisateur_edit' user_id=user.id %}" class="btn btn-outline-primary" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'celica_web:utilisateur_changer_mot_de_passe' user_id=user.id %}" class="btn btn-outline-info" title="Changer mot de passe">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                            <a href="{% url 'celica_web:utilisateur_delete' user_id=user.id %}" class="btn btn-outline-danger" title="Supprimer" 
+                                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+                    </div>
+                </div>
+      </div>
+    </div>
+    {% endif %}
+    </div>
+    
+    <!-- Message si aucun utilisateur trouvé -->
+    {% if not utilisateurs_par_statut.actif and not utilisateurs_par_statut.inactif and not utilisateurs_par_statut.suspendu %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle fa-2x mb-3"></i>
+        <h5>Aucun utilisateur trouvé</h5>
+        <p class="mb-0">Aucun utilisateur ne correspond aux critères de recherche.</p>
+        <a href="{% url 'celica_web:gerer_utilisateurs' %}" class="btn btn-primary mt-2">
+            <i class="fas fa-times me-1"></i>Réinitialiser la recherche
+        </a>
+    </div>
+    {% endif %}
+  </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des statistiques
+    function animateCounters() {
+        const counters = document.querySelectorAll('.stats-card h3');
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent) || 0;
+            let current = 0;
+            const increment = target / 20;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                counter.textContent = Math.floor(current);
+            }, 50);
+        });
+    }
+    
+    // Déclencher l'animation au chargement
+    animateCounters();
+    
+    // Focus automatique sur le champ de recherche
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        searchInput.focus();
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

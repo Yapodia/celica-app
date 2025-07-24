@@ -1,0 +1,248 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Accueil Visiteur - CelicaWeb{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Reset spécifique pour la page d'accueil */
+body {
+    background-color: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+}
+
+/* Reset pour le main-content */
+.main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+/* Reset pour le container */
+.container {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+/* Respecter les marges du footer */
+.footer .container {
+    padding-left: 50px !important;
+    padding-right: 30px !important;
+}
+
+/* Respecter les marges de la navbar */
+.navbar .container {
+    padding-left: 60px !important;
+    padding-right: 30px !important;
+}
+
+/* Reset pour la navbar */
+.navbar {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+}
+
+/* Reset pour tous les éléments */
+* {
+    box-sizing: border-box !important;
+}
+
+/* Styles pour la bannière simple */
+.hero-section {
+    position: relative;
+    height: calc(100vh - 120px); /* Hauteur moins navbar et footer */
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    background-color: #1a4e8a;
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.7);
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(26, 78, 138, 0.8) 0%, rgba(26, 78, 138, 0.4) 100%);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: #fff;
+    max-width: 1200px;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    line-height: 1.2;
+}
+
+.hero-description {
+    font-size: 1.3rem;
+    margin-bottom: 40px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    line-height: 1.6;
+    max-width: 100%;
+    white-space: nowrap;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-hero {
+    padding: 15px 30px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    display: inline-block;
+    border: 2px solid transparent;
+}
+
+.btn-primary-hero {
+    background: #1a4e8a;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(26, 78, 138, 0.3);
+}
+
+.btn-primary-hero:hover {
+    background: #fff;
+    color: #1a4e8a;
+    border-color: #1a4e8a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(26, 78, 138, 0.4);
+}
+
+.btn-secondary-hero {
+    background: transparent;
+    color: #fff;
+    border: 2px solid #fff;
+}
+
+.btn-secondary-hero:hover {
+    background: #fff;
+    color: #1a4e8a;
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 1100px) {
+    .hero-description {
+        white-space: normal;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-description {
+        font-size: 1.1rem;
+        white-space: normal;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .hero-content {
+        padding: 0 15px;
+        max-width: 90%;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-description {
+        font-size: 1rem;
+        white-space: normal;
+    }
+    
+    .hero-content {
+        padding: 0 10px;
+        max-width: 95%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Section Hero avec bannière montagneuse -->
+<div class="hero-section">
+    <div class="hero-background">
+        <img src="{% static 'banniere_montagne.jpg' %}" alt="Paysage montagneux" class="hero-image">
+        <div class="hero-overlay"></div>
+    </div>
+    <div class="hero-content">
+        <h1 class="hero-title">Bienvenue sur CELICAWeb</h1>
+        <p class="hero-description">
+            CELICAWeb est une application d'administration et de correction automatique de tests en CELICA Maintenance.
+        </p>
+        <div class="hero-buttons">
+            <a href="{% url 'celica_web:login' %}" class="btn-hero btn-secondary-hero">Se connecter</a>
+        </div>
+    </div>
+</div>
+
+<!-- Affichage des messages -->
+{% if messages %}
+    <div style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 600px;">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show text-center" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

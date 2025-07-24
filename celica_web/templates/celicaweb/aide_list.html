@@ -1,0 +1,24 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Liste des Aides - CelicaWeb{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Liste des Aides</h1>
+
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        {% if not aides %}
+            <p class="text-muted">Aucune aide disponible.</p>
+        {% else %}
+            {% for aide in aides %}
+            <div class="card mb-4" style="transition: box-shadow 0.3s;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ aide.title }}</h5>
+                    <p class="card-text">{{ aide.description }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

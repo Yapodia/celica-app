@@ -1,0 +1,92 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}
+    {% if form.instance.id %}
+        Modifier un Planning - CELICAWeb
+    {% else %}
+        Ajouter un Planning - CELICAWeb
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>
+        {% if form.instance.id %}
+            Modifier un Planning
+        {% else %}
+            Ajouter un Planning
+        {% endif %}
+    </h2>
+
+    <!-- Affichage des messages -->
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Formulaire pour ajouter/modifier un planning -->
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <span class="text-danger">{{ field.errors }}</span>
+                {% endif %}
+                {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a href="{% url 'celica_web:planning_list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+
+<!-- JavaScript pour gérer les contraintes -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('form').addEventListener('submit', (e) => {
+            const titreInput = document.querySelector('input[name="titre"]');
+            const dateDebutInput = document.querySelector('input[name="date_debut"]');
+            const dateFinInput = document.querySelector('input[name="date_fin"]');
+
+            // Validation du titre
+            if (titreInput && !titreInput.value.trim()) {
+                e.preventDefault();
+                alert('Le champ titre est requis.');
+                return;
+            }
+
+            // Validation des dates
+            if (dateDebutInput && dateFinInput) {
+                const dateDebut = new Date(dateDebutInput.value);
+                const dateFin = new Date(dateFinInput.value);
+                if (dateDebut > dateFin) {
+                    e.preventDefault();
+                    alert('La date de début doit être antérieure ou égale à la date de fin.');
+                    return;
+                }
+            }
+
+            // Validation Bootstrap
+            if (!e.target.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            e.target.classList.add('was-validated');
+        });
+    });
+</script>
+{% endblock %}

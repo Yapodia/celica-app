@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bienvenue sur CelicaWeb</title>
+</head>
+<body>
+    <a href="/">Retour à l'accueil</a>
+    <h1>Bienvenue sur CelicaWeb</h1>
+    <p>Voici la page d'accueil de votre application. Que souhaitez-vous faire ?</p>
+    <ul>
+        {% for option in options %}
+            <li><a href="{% url option.url %}">{{ option.name }}</a></li>
+        {% endfor %}
+    </ul>
+    <p>&copy; 2025 CelicaWeb. Tous droits réservés.</p>
+</body>
+</html>

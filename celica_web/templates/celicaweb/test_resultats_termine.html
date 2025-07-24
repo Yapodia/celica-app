@@ -1,0 +1,19 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Résultats détaillés du test - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Résultats détaillés du test : {{ test.titre }}</h2>
+    {% if resultats_context %}
+        {% for ctx in resultats_context %}
+            <div class="mb-5">
+                {% include 'celicaweb/resultat_test_termine.html' with resultat=ctx.resultat pourcentage=ctx.pourcentage couleur_appreciation=ctx.couleur_appreciation details_session=ctx.details_session only %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">Aucun résultat disponible pour ce test.</div>
+    {% endif %}
+</div>
+{% endblock %} 

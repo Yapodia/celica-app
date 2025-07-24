@@ -1,0 +1,172 @@
+{% extends 'celicaweb/base.html' %}
+{% load static %}
+
+{% block title %}Violations de Sécurité - CelicaWeb{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Violations de Sécurité Détectées
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Attention</h5>
+                        <p class="mb-0">
+                            Des violations de sécurité ont été détectées pendant votre session de test. 
+                            Ces actions sont interdites et peuvent entraîner l'interruption de votre test.
+                        </p>
+                    </div>
+
+                    {% if violations %}
+                        <h5 class="mt-4 mb-3">Historique des violations :</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Date/Heure</th>
+                                        <th>Type de violation</th>
+                                        <th>Description</th>
+                                        <th>URL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for violation in violations %}
+                                    <tr>
+                                        <td>{{ violation.timestamp|date:"d/m/Y H:i:s" }}</td>
+                                        <td>
+                                            <span class="badge bg-danger">
+                                                {% if violation.violation_type == 'copy_paste' %}
+                                                    <i class="fas fa-copy me-1"></i>Copier-coller
+                                                {% elif violation.violation_type == 'keyboard_shortcut' %}
+                                                    <i class="fas fa-keyboard me-1"></i>Raccourci clavier
+                                                {% elif violation.violation_type == 'right_click' %}
+                                                    <i class="fas fa-mouse me-1"></i>Clic droit
+                                                {% elif violation.violation_type == 'dev_tools' %}
+                                                    <i class="fas fa-tools me-1"></i>Outils de développement
+                                                {% elif violation.violation_type == 'tab_switch' %}
+                                                    <i class="fas fa-window-restore me-1"></i>Changement d'onglet
+                                                {% elif violation.violation_type == 'screenshot' %}
+                                                    <i class="fas fa-camera me-1"></i>Capture d'écran
+                                                {% else %}
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ violation.violation_type|title }}
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td>{{ violation.violation }}</td>
+                                        <td>
+                                            <small class="text-muted">{{ violation.url|truncatechars:50 }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5 class="text-success">Aucune violation détectée</h5>
+                            <p class="text-muted">Vous n'avez commis aucune violation de sécurité.</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <h5>Actions interdites pendant les tests :</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                Copier-coller (Ctrl+C, Ctrl+V, Ctrl+X)
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                Raccourcis clavier (F12, Ctrl+Shift+I, etc.)
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                Clic droit sur la page
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                Changement d'onglet ou de fenêtre
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                Capture d'écran
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                Ouverture des outils de développement
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 text-center">
+                        <a href="{% url 'celica_web:apprenant_dashboard' %}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>
+                            Retour au tableau de bord
+                        </a>
+                        <a href="{% url 'celica_web:apprenant_tests' %}" class="btn btn-outline-primary ms-2">
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            Mes tests
+                        </a>
+                        {% if debug %}
+                        <button onclick="testSecurityViolation()" class="btn btn-warning ms-2">
+                            <i class="fas fa-bug me-2"></i>
+                            Tester la sécurité
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if debug %}
+<script>
+function testSecurityViolation() {
+    console.log('🧪 Test de violation de sécurité...');
+    
+    // Simuler une violation
+    fetch('/security-violation/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({
+            violation: 'Test de violation simulée',
+            violation_type: 'test',
+            url: window.location.href
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('✅ Test réussi:', data);
+        alert('Test de violation enregistré avec succès ! Rechargez la page pour voir la violation.');
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('❌ Erreur lors du test:', error);
+        alert('Erreur lors du test de violation');
+    });
+}
+
+// Ajouter le token CSRF si pas présent
+if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = 'csrfmiddlewaretoken';
+    csrfToken.value = '{{ csrf_token }}';
+    document.body.appendChild(csrfToken);
+}
+</script>
+{% endif %}
+{% endblock %} 

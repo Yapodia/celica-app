@@ -1,0 +1,13 @@
+{% extends 'celicaweb/base.html' %}
+
+{% block title %}Supprimer Utilisateur{% endblock %}
+
+{% block content %}
+<h2>Supprimer Utilisateur</h2>
+<p>Êtes-vous sûr de vouloir supprimer l'utilisateur {{ utilisateur.email }} ?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirmer</button>
+    <a href="{% url 'celica_web:gerer_utilisateurs' %}">Annuler</a>
+</form>
+{% endblock %}
